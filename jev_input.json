@@ -1,0 +1,31 @@
+{
+  "original_request": "Write a product caption for a Maheshwari saree.\n\nRequirements:\n- Maximum 35 words\n- Premium but natural tone\n- Mention \"Maheshwari saree\"\n- Include a WhatsApp CTA\n- Do not claim the saree is handmade, pure silk, authentic, or handloom unless evidence is provided\n- Do not invent price, fabric composition, origin, certifications, or product features",
+  "locked_requirements": [
+    "Maximum 35 words.",
+    "Premium but natural tone.",
+    "Mention 'Maheshwari saree'.",
+    "Include a WhatsApp CTA.",
+    "Do not claim the saree is handmade, pure silk, authentic, or handloom unless evidence is provided.",
+    "Do not invent price, fabric composition, origin, certifications, or product features."
+  ],
+  "candidate_output": "Now presenting our Maheshwari saree. Connect with us on WhatsApp to order yours or inquire about details.",
+  "output_type": "text",
+  "available_evidence": "The product is a Maheshwari saree. Orders and inquiries are accepted via WhatsApp.",
+  "known_constraints": [
+    "Maximum 35 words.",
+    "Do not claim handmade, pure silk, authentic, or handloom.",
+    "Do not invent price, fabric composition, origin, certifications, or product features."
+  ],
+  "deterministic_checks": {
+    "required_substrings": [
+      "Maheshwari saree",
+      "WhatsApp"
+    ],
+    "forbidden_substrings": [
+      "handmade",
+      "pure silk",
+      "authentic",
+      "handloom"
+    ]
+  }
+}

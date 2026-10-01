@@ -21,9 +21,26 @@ class Engine:
         candidate = state["candidate_output"]
         rule_findings, previous_triggered, repaired_from = [], set(), []
         repair_performed = False
+        worker_calls = []
+        def call_worker(operation, payload):
+            start = time.monotonic()
+            call = {"operation": operation, "attempt": repairs, "status": "error"}
+            try:
+                method = getattr(self.worker, operation, None)
+                output = method(payload) if callable(method) else self.worker.run(payload)
+                if not isinstance(output, str) or not output.strip():
+                    raise EngineError("Worker returned empty/non-text output")
+                call["status"] = "success"
+                return output
+            finally:
+                usage = getattr(self.worker, "last_usage", None)
+                call["usage"] = {k:v for k,v in usage.items() if type(v) is int and v >= 0} if isinstance(usage,dict) else None
+                call["elapsed_seconds"] = time.monotonic()-start
+                worker_calls.append(call)
         def record(decision, failed, primary, reason, result=None, elapsed=0):
             event = {"run_id": run_id, "task_type": state["output_type"],
                      "worker": getattr(self.worker, "name", "none"),
+                     "worker_calls": list(worker_calls),
                      "evaluation_profile": self.profile["name"],
                      "profile_sha256": hashlib.sha256(json.dumps(self.profile, sort_keys=True).encode()).hexdigest(),
                      "thresholds": self.thresholds, "candidate_sha256": hashlib.sha256((state["candidate_output"] or "").encode()).hexdigest(),
@@ -42,12 +59,13 @@ class Engine:
             self.logger.write(event); history.append(event)
         def final(decision, reason):
             return {"run_id": run_id, "decision": decision, "reason": reason,
-                    "final_output": state["candidate_output"], "repairs": repairs, "history": history}
+                    "final_output": state["candidate_output"], "repairs": repairs, "worker_calls": worker_calls, "history": history}
         try:
             if candidate is None:
                 if self.worker is None: raise EngineError("Generation requires a configured worker")
-                candidate = self.worker.run({"original_request": state["original_request"],
-                    "locked_requirements": state["locked_requirements"]+state["known_constraints"],
+                candidate = call_worker("generate", {"original_request": state["original_request"],
+                    "locked_requirements": state["locked_requirements"],
+                    "known_constraints": state["known_constraints"],
                     "available_evidence": state["available_evidence"], "output_type": state["output_type"],
                     "deterministic_constraints": checks,
                     **{k:state[k] for k in ("previous_candidate", "allowed_changes") if k in state}})
@@ -84,7 +102,7 @@ class Engine:
                 repaired_from = [r["rule_id"] for r in rule_findings if r["status"] == "triggered" and r["severity"] != "INFO"]
                 repair_performed = False
                 repairs += 1
-                corrected = self.worker.run(payload)
+                corrected = call_worker("repair", payload)
                 if self.rules:
                     state["previous_candidate"] = candidate
                     state["repair_context"] = {"failed_dimensions": failed, "failure_rules": payload["failure_rules"],

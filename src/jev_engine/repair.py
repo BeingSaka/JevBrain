@@ -24,7 +24,7 @@ def repair_payload(state, failed, primary, checks, rule_findings=None):
             "failed_dimensions": failed, "primary_failure": primary,
             "failure_rules": [{k:r[k] for k in ("rule_id", "name", "severity", "probability", "repair_instruction")} for r in targeted],
             "required_correction": {
-                "rule": "Repair only identified failures. Preserve correct portions and locked intent. Return only the corrected candidate.",
+                "rule": "Repair only the identified failures. Preserve all content that already satisfies the request. Do not introduce unsupported information or unrelated changes. Return only the corrected candidate.",
                 "actions": [CORRECTIONS.get(x, "Correct the named failure") for x in failed if not x.startswith("rule:")] + [r["repair_instruction"] for r in targeted],
                 "available_evidence": state["available_evidence"],
                 **({"preservation_reference":state["previous_candidate"]} if any(r["requires_previous_candidate"] for r in targeted) and state.get("previous_candidate") else {}),

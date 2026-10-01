@@ -1,3 +1,7 @@
+**Antigravity bridge added:** Use `WORKER_COMMAND_JSON=["python","antigravity_worker.py"]` and `ANTIGRAVITY_MODEL=gemini-3.8-flash-low` in your existing `.env`. No Ollama or Gemini API key required. Run from this project directory. Setup and limits: [docs/ANTIGRAVITY_BRIDGE.md](docs/ANTIGRAVITY_BRIDGE.md). 62 tests pass; no live Antigravity/Jev call was made during this change.
+
+**Worker integration completed:** Explicit provider-independent `generate()` / `repair()` operations now use the existing local Ollama or command adapter. Setup, targeted feedback, usage logs and the single live run command: [docs/WORKER_INTEGRATION.md](docs/WORKER_INTEGRATION.md). All 54 tests pass. User-reported live Jev validation succeeded; live worker validation is still pending configuration.
+
 # JEV AI Evaluation & Decision Engine — V2
 
 **V2 delta:** The configurable universal Failure Rules Library plugs into the existing V1 engine. Ten starter rules; no new dependencies. CLI defaults to `rules/universal.json`; `--no-rules` preserves V1 evaluation. Full schema, severity policy, extension instructions and validation: [docs/FAILURE_RULES.md](docs/FAILURE_RULES.md).
@@ -9,7 +13,7 @@ python run.py examples/input.json --env-file .env --output result.json
 
 Python 3.10+; standard library only. Universal evaluator with automatic targeted repair.
 
-**Implemented and tested offline. Live Jev and live worker operation were not run: no TypeSafe credentials or AI worker were supplied to the build session.** The demo uses explicit HTTP/worker fixtures; it does not establish evaluator accuracy.
+**Original V2 build was tested offline. The user subsequently reported successful live Jev evaluation. This Work session has not run a live AI worker: worker configuration and credentials are unavailable here.** The demo uses explicit HTTP/worker fixtures; it does not establish evaluator accuracy.
 
 ## Architecture
 
@@ -134,7 +138,7 @@ Official sources and compatibility mapping are in `docs/API_VERIFICATION.md`.
 
 45 automated tests passed at V2 build time (26 original V1 tests + 19 V2 tests). Offline HTTP demo: REVISE → fixture correction → PASS, one repair and two HTTP evaluations. Tests cover initial generation, cap exhaustion, uncertainty, hard-gate precedence, evidence review, invalid responses, unchanged/oscillating candidates, deterministic validation, auth/retries and command execution.
 
-**Live acceptance is pending**. To validate with real Jev and an actual worker, run the commands above with your local credentials and worker. A terminal HUMAN REVIEW can be the correct outcome, not a failed integration.
+**Live worker acceptance is pending**; the user has since reported successful live Jev evaluation. To validate with real Jev and an actual worker, run the commands above with your local credentials and worker. A terminal HUMAN REVIEW can be the correct outcome, not a failed integration.
 
 Universal judgments are broad and uncalibrated. Supplied evidence is not independently researched or authenticated. Jev can be steered by adversarial content despite explicit data-boundary instructions; no claim of prompt-injection immunity. English accuracy is strongest per the vendor; Marathi/Hindi performance needs measured validation. The engine does not attach itself to ordinary ChatGPT/Gemini web conversations; it integrates through an automated worker adapter or a supplied candidate. Offline fixtures demonstrate control flow, not the probability quality of Jev or the quality of a local model.
 
