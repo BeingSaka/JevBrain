@@ -1,0 +1,12 @@
+{
+  "original_request": "Write a concise launch message using the supplied facts.",
+  "locked_requirements": [
+    "Mention Atlas and its launch date.",
+    "Do not invent prices."
+  ],
+  "output_type": "text",
+  "available_evidence": "Atlas launches on 15 October 2026. Price has not been announced.",
+  "deterministic_checks": {
+    "max_chars": 200
+  }
+}

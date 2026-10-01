@@ -1,0 +1,34 @@
+{
+  "mode": "OFFLINE HTTP AND WORKER FIXTURES; not live Jev/AI",
+  "deliberate_violations": [
+    "locked date changed",
+    "generic filler",
+    "unrequested website/plans"
+  ],
+  "detected_rule_ids": [
+    "FR002",
+    "FR005",
+    "FR009"
+  ],
+  "route": [
+    "REVISE",
+    "PASS"
+  ],
+  "repairs": 1,
+  "repair_feedback_rule_ids": [
+    "FR002",
+    "FR005",
+    "FR009"
+  ],
+  "mixed_questions_per_request": [
+    15,
+    16,
+    15
+  ],
+  "clean_candidate": {
+    "decision": "PASS",
+    "repairs": 0
+  },
+  "final_output": "Atlas launches on 15 October 2026. Price has not been announced.",
+  "result": "PASS"
+}

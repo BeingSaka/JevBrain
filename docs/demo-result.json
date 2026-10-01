@@ -1,0 +1,11 @@
+{
+  "mode": "OFFLINE FIXTURES \u2014 no live Jev or AI generation",
+  "route": [
+    "REVISE",
+    "PASS"
+  ],
+  "repairs": 1,
+  "http_evaluations": 2,
+  "final_output": "Atlas launches on 15 October 2026. Price has not been announced.",
+  "result": "PASS"
+}
