@@ -1,6 +1,6 @@
 {
   "accept_min": 0.9,
-  "risk_max": 0.1,
+  "risk_max": 0.18,
   "failure_min": 0.8,
   "score_min": 3.5,
   "confidence_min": 0.65
