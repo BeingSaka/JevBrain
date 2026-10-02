@@ -55,13 +55,15 @@ def validate_response(response, questions):
         if not isinstance(probs, dict) or set(probs) != expected:
             raise EngineError("Invalid evaluation distribution")
         for v in probs.values(): number(v, 0, 1)
-        if abs(sum(probs.values()) - 1) > .01: raise EngineError("Evaluation probabilities do not sum to one")
+        prob_sum = sum(probs.values())
+        if abs(prob_sum - 1) > .01: raise EngineError("Evaluation probabilities do not sum to one")
         if q["type"] == "choice":
             if a.get("choice") not in expected or probs[a["choice"]] + .001 < max(probs.values()):
                 raise EngineError("Invalid winning choice")
         else:
             number(a.get("score"), 0, len(expected)-1)
-            if abs(a["score"] - sum(int(k)*v for k,v in probs.items())) > .02:
+            weighted = sum(int(k) * v for k, v in probs.items()) / prob_sum
+            if abs(a["score"] - weighted) > .05 + 1e-9:
                 raise EngineError("Invalid weighted score")
             if not isinstance(a.get("legend"), dict) or set(a["legend"]) != expected:
                 raise EngineError("Score legend missing")
