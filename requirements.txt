@@ -1,1 +1,3 @@
-# Python 3.10+ standard library only; no pip dependencies.
+# Runtime: Python 3.10+ standard library only; no pip dependencies.
+# Development / testing:
+pytest>=7.0

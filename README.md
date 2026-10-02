@@ -23,33 +23,121 @@ REVISE → targeted worker correction → checks and Jev re-evaluation. At most 
 
 ## Setup and run
 
-Extract this project and open a terminal **inside `jev-ai-evaluation-engine`**. No pip installation is required.
+Extract this project and open a terminal **inside `jev-ai-evaluation-engine`**. No pip installation is required for the engine runtime.
 
-1. Copy `.env.example` to `.env` (PowerShell: `Copy-Item .env.example .env`; bash: `cp .env.example .env`).
-2. Obtain a **TypeSafe** API key at https://console.typesafe.ai and set `TYPESAFE_API_KEY` in `.env`. Do not paste credentials into chat. The client uses `POST https://api.typesafe.ai/v1/systemone` only. Keys for independent Jev community gateways are not interchangeable; V1 does not send keys to those services.
-3. Configure one worker. For free local generation, set `OLLAMA_MODEL` to an **already installed** Ollama model and start your local Ollama server. The engine does not download models. `OLLAMA_URL` defaults to `http://localhost:11434`. CPU/RAM and generation speed depend on your chosen model. Alternatively set `WORKER_COMMAND_JSON` to a JSON argv array for your existing worker program. Command mode takes precedence if both are configured.
-4. Run:
+### 1. Environment file
+
+Copy `.env.example` to `.env`:
+
+```powershell
+# PowerShell
+Copy-Item .env.example .env
+```
+```bash
+# bash / zsh
+cp .env.example .env
+```
+
+Open `.env` and set `TYPESAFE_API_KEY`. The `.env.example` file documents every supported variable with inline comments.
+
+### 2. TypeSafe API key (required for live evaluation)
+
+Obtain a key at https://console.typesafe.ai and set `TYPESAFE_API_KEY` in `.env`. Do not paste credentials into chat. The client uses `POST https://api.typesafe.ai/v1/systemone` only. Keys for independent Jev community gateways are not interchangeable; V1 does not send keys to those services.
+
+### 3. Worker (optional)
+
+A worker generates and repairs candidates. Without one the engine evaluates supplied candidates only — no AI generation or repair cycles run.
+
+Three options, documented in `.env.example` and `docs/WORKER_INTEGRATION.md`:
+
+- **Antigravity CLI (`agy`):** Set `WORKER_COMMAND_JSON=["python","antigravity_worker.py"]`. Requires the `agy` executable on `PATH` and an active Antigravity account. The native binary must be used; `.bat`/`.cmd` launchers are not supported. See `docs/ANTIGRAVITY_BRIDGE.md`.
+- **Ollama (local, free):** Set `OLLAMA_MODEL` to an **already installed** Ollama model and start the Ollama server. `OLLAMA_URL` defaults to `http://localhost:11434`. The engine does not download models.
+- **Custom command:** Set `WORKER_COMMAND_JSON` to a JSON argv array pointing to your own worker program (reads JSON from stdin, writes candidate text to stdout).
+
+`WORKER_COMMAND_JSON` takes precedence over `OLLAMA_MODEL` if both are set.
+
+### 4. Install test dependency (optional)
+
+```bash
+pip install -r requirements.txt
+```
+
+This installs `pytest`. The engine itself has no runtime pip dependencies.
+
+### 5. Run tests
+
+```bash
+python -m pytest tests/
+```
+
+Or without pytest:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+All tests run fully offline without credentials.
+
+### 6. Offline demo (no credentials required)
+
+```bash
+python examples/demo.py
+python examples/demo_v2.py
+```
+
+Both demos use explicit HTTP and worker fixtures. Output is labelled `OFFLINE FIXTURES`. This verifies control flow, not live Jev accuracy.
+
+### 7. Live CLI run
+
+With a supplied candidate (intentionally defective — HUMAN REVIEW or REPAIR is the expected result):
 
 ```bash
 python run.py examples/input.json --env-file .env --output result.json
 ```
 
-Request-only generation + evaluation + repair:
+`examples/input.json` contains a candidate that invents a price and omits the required launch date. **HUMAN REVIEW or REPAIR is the correct outcome**, not a sign of misconfiguration.
+
+With request-only mode (worker required; engine generates and evaluates):
 
 ```bash
 python run.py examples/request-only.json --env-file .env --output result.json
 ```
 
-Tests and zero-credit offline HTTP end-to-end demo:
-
-```bash
-python -m unittest discover -s tests -v
-python examples/demo.py
-```
-
-`python` may be `py` on Windows. No activation or editable installation is needed. CLI exit code 0 = PASS; 2 = HUMAN REVIEW or input/configuration error. REVISE is an intermediate logged decision, never a terminal CLI result. `result.json` contains the final output, decision, reason, repair count and evaluation history. Evaluation logs default to `logs/evaluations.jsonl`.
+`python` may be `py` on Windows. No activation or editable installation is needed beyond `requirements.txt`. CLI exit code 0 = PASS; 2 = HUMAN REVIEW or input/configuration error. REVISE is an intermediate logged decision, never a terminal CLI result. `result.json` contains the final output, decision, reason, repair count and evaluation history. Evaluation logs default to `logs/evaluations.jsonl`.
 
 Environment variables override `.env`. `--env-file` explicitly loads a simple `KEY=value` format, without shell interpolation; it is not a complete dotenv parser.
+
+### 8. Semantic evaluation flag
+
+Pass `--semantic` to enable the full Noul + Choice + Score evaluation pipeline when running the CLI directly:
+
+```bash
+python run.py examples/input.json --env-file .env --semantic
+```
+
+The benchmark runner (`benchmarks/run_benchmark.py`) always uses the semantic pipeline regardless of this flag.
+
+### 9. Benchmark
+
+The canonical 36-case Noul Benchmark v1.0 measures the engine against labeled gold cases:
+
+```bash
+python benchmarks/run_benchmark.py
+```
+
+Requires `TYPESAFE_API_KEY` in `.env`. The runner validates the canonical fixture SHA before every run. Results are saved to `benchmarks/baseline_results.json`.
+
+**Cache:** The runner caches provider responses in `benchmarks/.api_cache.json` (gitignored). Cached cases are replayed without a live provider call — the output indicates `Noul:` values but does not re-contact the API. To force a fully fresh live run, delete `benchmarks/.api_cache.json` before running:
+
+```powershell
+Remove-Item benchmarks\.api_cache.json -ErrorAction SilentlyContinue
+```
+
+Validate the fixture without running a full benchmark:
+
+```bash
+python benchmarks/validate_fixture.py
+```
 
 ## Worker contract (no routine copy/paste)
 
@@ -146,41 +234,53 @@ Universal judgments are broad and uncalibrated. Supplied evidence is not indepen
 
 ```text
 jev-ai-evaluation-engine/
-  run.py
+  run.py                        entry point (python run.py <input> --env-file .env)
+  antigravity_worker.py         Antigravity CLI worker bridge
   README.md
-  .env.example
-  requirements.txt
-  config/thresholds.json
-  evaluators/universal.json
-  rules/universal.json
+  .env.example                  template; copy to .env
+  requirements.txt              runtime: stdlib only; dev: pytest
+  config/thresholds.json        acceptance thresholds (calibrated per session)
+  evaluators/universal.json     Jev question criteria
+  rules/universal.json          Failure Rules Library (10 starter rules)
   src/jev_engine/
     __init__.py
-    __main__.py
+    __main__.py                 CLI argument parsing
     normalize.py
-    jev_client.py
-    policy.py
-    repair.py
-    worker.py
-    engine.py
+    jev_client.py               TypeSafe HTTP client
+    policy.py                   decision routing
+    repair.py                   repair payload assembly
+    worker.py                   OllamaWorker, CommandWorker, configured_worker()
+    engine.py                   Engine orchestrator
+    semantic.py                 semantic_decide() policy engine
     logging.py
-    failure_rules.py
-  tests/test_engine.py
-  tests/test_failure_rules.py
+    failure_rules.py            load_packs(), findings_for()
+  tests/
+    test_engine.py
+    test_failure_rules.py
+    test_semantic.py
+    test_client_validation.py
+    test_worker_integration.py
+    test_antigravity_worker.py
+  benchmarks/
+    run_benchmark.py            36-case canonical benchmark (requires TYPESAFE_API_KEY)
+    validate_fixture.py         offline fixture integrity check
+    noul_benchmark_v1_locked.json  immutable canonical fixture
+    noul_benchmark_v1_integrity.txt  expected SHA and case manifest
   examples/
-    input.json
-    request-only.json
-    demo.py
-    demo_v2.py
-    fixture_worker.py
+    input.json                  sample with intentionally defective candidate
+    request-only.json           request-only mode (worker generates candidate)
+    demo.py                     offline V1 control-flow demo
+    demo_v2.py                  offline V2 demo with Failure Rules
+    fixture_worker.py           test fixture only; not a real AI worker
   docs/
     API_VERIFICATION.md
-    LOCKED_HANDOFF.md
-    VALIDATION.md
-    demo-result.json
     FAILURE_RULES.md
+    WORKER_INTEGRATION.md
+    ANTIGRAVITY_BRIDGE.md
+    VALIDATION.md
     V2_VALIDATION.md
-    demo-v2-result.json
-  logs/  (created/populated on use)
+    LOCKED_HANDOFF.md
+  logs/                         created on first run; gitignored
 ```
 
 ## Future work (not implemented)
