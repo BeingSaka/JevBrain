@@ -21,3 +21,7 @@ ENV/
 logs/
 *.log
 result.json
+jev_result.json
+visitor_result.json
+visitor_test_input.json
+backup_before_consolidation.zip
