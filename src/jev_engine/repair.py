@@ -16,16 +16,25 @@ CORRECTIONS = {
     "valid_json": "Return strictly valid JSON, without Markdown fences.",
 }
 
-def repair_payload(state, failed, primary, checks, rule_findings=None):
+def repair_payload(state, failed, primary, checks, rule_findings=None, repair_targets=None):
     targeted = [r for r in (rule_findings or []) if r["status"] == "triggered" and r["severity"] != "INFO"]
-    return {"original_request": state["original_request"],
+    actions = [CORRECTIONS.get(x, "Correct the named failure") for x in failed if not x.startswith("rule:")] + [r["repair_instruction"] for r in targeted]
+    if repair_targets:
+        for t in repair_targets:
+            inst = t.get("instruction")
+            if inst and inst not in actions:
+                actions.append(inst)
+    payload = {"original_request": state["original_request"],
             "locked_requirements": state["locked_requirements"] + state["known_constraints"],
             "previous_candidate": state["candidate_output"],
             "failed_dimensions": failed, "primary_failure": primary,
             "failure_rules": [{k:r[k] for k in ("rule_id", "name", "severity", "probability", "repair_instruction")} for r in targeted],
             "required_correction": {
                 "rule": "Repair only the identified failures. Preserve all content that already satisfies the request. Do not introduce unsupported information or unrelated changes. Return only the corrected candidate.",
-                "actions": [CORRECTIONS.get(x, "Correct the named failure") for x in failed if not x.startswith("rule:")] + [r["repair_instruction"] for r in targeted],
+                "actions": actions,
                 "available_evidence": state["available_evidence"],
                 **({"preservation_reference":state["previous_candidate"]} if any(r["requires_previous_candidate"] for r in targeted) and state.get("previous_candidate") else {}),
                 "deterministic_constraints": checks}}
+    if repair_targets:
+        payload["repair_targets"] = repair_targets
+    return payload

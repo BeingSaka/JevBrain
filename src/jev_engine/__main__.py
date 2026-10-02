@@ -30,6 +30,7 @@ def main():
     parser.add_argument("--thresholds", default="config/thresholds.json")
     parser.add_argument("--rules", action="append", help="Rule pack JSON; repeat to combine packs")
     parser.add_argument("--no-rules", action="store_true", help="Run unchanged V1 evaluation without failure rules")
+    parser.add_argument("--semantic", action="store_true", help="Enable Noul + Choice + Score semantic evaluation pipeline")
     args = parser.parse_args()
     try:
         if args.env_file: load_env(args.env_file)
@@ -38,7 +39,8 @@ def main():
         if args.no_rules and args.rules: raise EngineError("Choose --rules or --no-rules")
         rules = [] if args.no_rules else load_packs(args.rules or ["rules/universal.json"], profile)
         engine = Engine(JevClient(), configured_worker(), profile,
-            json.loads(Path(args.thresholds).read_text()), JsonlLogger(args.log), rules=rules)
+            json.loads(Path(args.thresholds).read_text()), JsonlLogger(args.log), rules=rules,
+            semantic_evaluation_enabled=args.semantic)
         result = engine.run(json.loads(Path(args.input).read_text(encoding="utf-8")))
         text = json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False)
         if args.output: Path(args.output).write_text(text+"\n", encoding="utf-8")

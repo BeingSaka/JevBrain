@@ -7,7 +7,9 @@ NEGATIVE = ("critical_requirement_missing", "instruction_violation_present",
 
 def validate_thresholds(t):
     expected = {"accept_min", "risk_max", "failure_min", "score_min", "confidence_min"}
-    if not isinstance(t, dict) or set(t) != expected: raise EngineError("Invalid threshold config")
+    allowed = expected | {"semantic_evaluation_enabled"}
+    if not isinstance(t, dict) or not expected.issubset(set(t)) or (set(t) - allowed):
+        raise EngineError("Invalid threshold config")
     for k in expected: number(t[k], 0, 4 if k == "score_min" else 1)
     if not t["risk_max"] < t["failure_min"] or not 1-t["accept_min"] < t["failure_min"]:
         raise EngineError("Thresholds need an uncertainty band")
