@@ -42,7 +42,7 @@ class RuleTests(unittest.TestCase):
         state,_=normalize(INPUT)
         active=applicable(RULES,state)
         self.assertEqual(len(active),9)
-        self.assertEqual(len(questions_for(PROFILE,active)),15)
+        self.assertEqual(len(questions_for(PROFILE,active)),16)
         self.assertNotIn('failure_FR003',questions_for(PROFILE,active))
     def test_multiple_violations_targeted_repair_pass(self):
         e=RuleEvaluator([{'violations':['FR002','FR005','FR009']},{}])

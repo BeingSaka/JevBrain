@@ -60,6 +60,16 @@ def validate_semantic_evaluation(data):
     if "reason" in score and not isinstance(score["reason"], str):
         raise EngineError("score.reason must be a string")
 
+    # Optional evidence_resolvable validation: value (0.0-1.0), confidence (0.0-1.0)
+    if "evidence_resolvable" in data:
+        er = data["evidence_resolvable"]
+        if not isinstance(er, dict) or "value" not in er or "confidence" not in er:
+            raise EngineError("evidence_resolvable must be an object with value and confidence")
+        number(er["value"], 0.0, 1.0)
+        number(er["confidence"], 0.0, 1.0)
+        if "reason" in er and not isinstance(er["reason"], str):
+            raise EngineError("evidence_resolvable.reason must be a string")
+
     # Concerns validation: list of strings
     if not isinstance(data["concerns"], list) or any(not isinstance(x, str) for x in data["concerns"]):
         raise EngineError("concerns must be a list of strings")
@@ -181,9 +191,40 @@ def extract_semantic_evaluation(raw_response, state, checks, rule_findings=None)
         # Confidence reflects distance from uncertainty band (0.5 is maximum uncertainty)
         noul_conf = max(0.0, min(1.0, 2.0 * abs(noul_val - 0.5)))
 
-    # 4. Extract Concerns and Repair Targets
+    # 4. Extract Evidence Resolvability (if present in batched response)
+    evidence_res = None
+    if "evidence_resolvable" in answers:
+        er_raw = answers["evidence_resolvable"]
+        if not isinstance(er_raw, dict) or "noul" not in er_raw:
+            raise EngineError("evidence_resolvable must be an object with noul")
+        raw_er = er_raw["noul"]
+        if type(raw_er) not in (int, float) or not math.isfinite(raw_er) or not (0.0 <= raw_er <= 1.0):
+            raise EngineError("evidence_resolvable noul must be a finite number between 0.0 and 1.0")
+        er_val = float(raw_er)
+        if "confidence" in er_raw and er_raw["confidence"] is not None:
+            raw_er_c = er_raw["confidence"]
+            if type(raw_er_c) not in (int, float) or not math.isfinite(raw_er_c) or not (0.0 <= raw_er_c <= 1.0):
+                raise EngineError("evidence_resolvable confidence must be a finite number between 0.0 and 1.0")
+            er_conf = float(raw_er_c)
+        else:
+            er_conf = 1.0
+        er_reason = er_raw.get("reason", (
+            "Supplied evidence is authoritative and resolvable"
+            if er_val >= 0.50
+            else "Supplied evidence contains unresolved conflicts, unverified claims, or requires human judgment"
+        ))
+        evidence_res = {
+            "value": round(er_val, 4),
+            "confidence": round(er_conf, 4),
+            "reason": er_reason,
+        }
+
+    # 5. Extract Concerns and Repair Targets
     concerns = []
     repair_targets = []
+
+    if evidence_res and evidence_res["value"] < 0.50:
+        concerns.append(f"evidence_resolvable below threshold (probability: {evidence_res['value']:.2f})")
 
     # Check negative nouls
     for k in NEGATIVE_NOULS:
@@ -241,6 +282,8 @@ def extract_semantic_evaluation(raw_response, state, checks, rule_findings=None)
         "concerns": concerns,
         "repair_targets": repair_targets,
     }
+    if evidence_res is not None:
+        semantic_obj["evidence_resolvable"] = evidence_res
 
     return validate_semantic_evaluation(semantic_obj)
 
@@ -285,13 +328,25 @@ def semantic_decide(semantic_eval, thresholds, rule_findings=None, deterministic
     if deterministic_failed:
         return "REPAIR", failed_dims, "Deterministic validation failed"
 
-    # If critical rule is in uncertain state, human review is mandatory
+    # Actionable critical failure rules route to REPAIR before residual rule uncertainty
+    triggered_critical = [r for r in critical_rules if r.get("status") == "triggered"]
+    if triggered_critical:
+        choice = semantic_eval["choice"]
+        if choice["value"] in ("insufficient_evidence", "other"):
+            return "HUMAN REVIEW", failed_dims, "Evidence or correction is unresolved"
+        if choice["confidence"] < thresholds["confidence_min"]:
+            return "HUMAN REVIEW", failed_dims, "Low semantic confidence"
+        ev_res = semantic_eval.get("evidence_resolvable")
+        if ev_res is not None:
+            if ev_res["value"] < 0.50:
+                return "HUMAN REVIEW", failed_dims, "Unresolved source authority or evidence conflict"
+            if ev_res["confidence"] < thresholds["confidence_min"]:
+                return "HUMAN REVIEW", failed_dims, "Low evidence resolvability confidence"
+        return "REPAIR", failed_dims, "Triggered critical failure rules"
+
+    # If critical rule is in uncertain state and no actionable failure is triggered, human review is mandatory
     if any(r.get("status") == "uncertain" for r in critical_rules):
         return "HUMAN REVIEW", failed_dims, "Failure-rule probability in uncertainty band"
-
-    # If critical rule is triggered, PASS is prohibited regardless of high Score/Noul
-    if any(r.get("status") == "triggered" for r in critical_rules):
-        return "REPAIR", failed_dims, "Triggered critical failure rules"
 
     # -------------------------------------------------------------
     # Stage B — Semantic Confidence Check
@@ -299,13 +354,13 @@ def semantic_decide(semantic_eval, thresholds, rule_findings=None, deterministic
     noul = semantic_eval["noul"]
     choice = semantic_eval["choice"]
     score = semantic_eval["score"]
+    ev_res = semantic_eval.get("evidence_resolvable")
 
     # All semantic dimensions must meet confidence threshold
-    min_confidence = min(
-        noul["confidence"],
-        choice["confidence"],
-        score["confidence"],
-    )
+    confs = [noul["confidence"], choice["confidence"], score["confidence"]]
+    if ev_res is not None:
+        confs.append(ev_res["confidence"])
+    min_confidence = min(confs)
     if min_confidence < thresholds["confidence_min"]:
         return "HUMAN REVIEW", failed_dims, "Low semantic confidence"
 
@@ -318,12 +373,15 @@ def semantic_decide(semantic_eval, thresholds, rule_findings=None, deterministic
     # 3. score.value >= score_min
     # 4. choice.value == 'none'
     # 5. no blocking warning rules
+    # 6. evidence is safely resolvable
     if noul["value"] < thresholds["accept_min"]:
         failed_dims.append("noul_acceptance")
     if score["value"] < thresholds["score_min"]:
         failed_dims.append("production_readiness")
     if choice["value"] != "none":
         failed_dims.append("primary_failure")
+    if ev_res is not None and ev_res["value"] < 0.50:
+        failed_dims.append("evidence_resolvability")
 
     for r in warning_rules:
         r_dim = "rule:" + r["rule_id"]
@@ -339,6 +397,9 @@ def semantic_decide(semantic_eval, thresholds, rule_findings=None, deterministic
     # Check for unresolved evidence or non-actionable choice categories
     if choice["value"] in ("insufficient_evidence", "other"):
         return "HUMAN REVIEW", failed_dims, "Evidence or correction is unresolved"
+
+    if ev_res is not None and ev_res["value"] < 0.50:
+        return "HUMAN REVIEW", failed_dims, "Unresolved source authority or evidence conflict"
 
     if choice["value"] == "none" and not any(r.get("status") == "triggered" for r in rule_findings):
         # Failed gates without an actionable failure class

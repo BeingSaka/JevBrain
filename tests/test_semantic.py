@@ -28,7 +28,7 @@ INPUT = json.loads((ROOT / 'examples/input.json').read_text())
 
 import math
 
-def make_response(questions=None, good=True, choice="none", score=4.0, noul=0.98, confidence=0.95, violations=None, noul_conf=None, choice_conf=None, score_conf=None):
+def make_response(questions=None, good=True, choice="none", score=4.0, noul=0.98, confidence=0.95, violations=None, noul_conf=None, choice_conf=None, score_conf=None, resolvable=True):
     """Constructs a valid single-batched Jev evaluation response matching questions."""
     q_dict = dict(questions or PROFILE['questions'])
     violations = set(violations or [])
@@ -38,6 +38,12 @@ def make_response(questions=None, good=True, choice="none", score=4.0, noul=0.98
             if k.startswith('failure_'):
                 rid = k.removeprefix('failure_')
                 answers[k] = {'type': 'noul', 'noul': 0.95 if rid in violations else 0.02}
+            elif k == 'evidence_resolvable':
+                answers[k] = {
+                    'type': 'noul',
+                    'noul': 0.98 if resolvable else 0.02,
+                    'confidence': confidence,
+                }
             else:
                 positive = k in ('requirements_met', 'evidence_sufficient', 'ready_to_deliver')
                 if good:
@@ -461,5 +467,297 @@ class SemanticEvaluationTests(unittest.TestCase):
         self.assertIn('noul', event['semantic_evaluation'])
 
 
+class StageAPolicyPrecedenceTests(unittest.TestCase):
+    """
+    Targeted policy tests verifying Stage A precedence correction (Tests A-F):
+    Definite actionable failure routes to REPAIR before unrelated residual uncertainty
+    from another non-triggered critical rule can force HUMAN REVIEW.
+    """
+
+    def setUp(self):
+        self.thresholds = dict(THRESHOLDS)
+
+    # TEST A: definite actionable failure + unrelated residual uncertainty => REPAIR
+    def test_a_definite_actionable_failure_with_residual_uncertainty(self):
+        rule_findings = [
+            {"rule_id": "FR002", "name": "Locked requirement violated", "severity": "CRITICAL", "status": "triggered"},
+            {"rule_id": "FR003", "name": "Unsupported or invented claim", "severity": "CRITICAL", "status": "uncertain"},
+        ]
+        semantic_eval = {
+            "noul": {"value": 0.05, "confidence": 0.95, "reason": "substantive issues"},
+            "choice": {"value": "instruction_violation", "confidence": 0.90, "reason": "Locked requirement violated"},
+            "score": {"value": 1.20, "confidence": 0.90, "reason": "major revision"},
+            "concerns": ["Rule FR002: triggered", "Rule FR003: uncertain"],
+            "repair_targets": [{"type": "instruction_violation", "location": "output", "instruction": "fix"}],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "REPAIR")
+        self.assertIn("rule:FR002", failed_dims)
+        self.assertEqual(reas, "Triggered critical failure rules")
+
+    # TEST B: no definite failure + material unresolved uncertainty => HUMAN REVIEW
+    def test_b_no_definite_failure_with_material_unresolved_uncertainty(self):
+        rule_findings = [
+            {"rule_id": "FR003", "name": "Unsupported or invented claim", "severity": "CRITICAL", "status": "uncertain"},
+        ]
+        semantic_eval = {
+            "noul": {"value": 0.95, "confidence": 0.90, "reason": "all requirements met"},
+            "choice": {"value": "none", "confidence": 0.95, "reason": "no error"},
+            "score": {"value": 4.0, "confidence": 0.95, "reason": "production ready"},
+            "concerns": ["Rule FR003: uncertain"],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "HUMAN REVIEW")
+        self.assertIn("rule:FR003", failed_dims)
+        self.assertEqual(reas, "Failure-rule probability in uncertainty band")
+
+    # TEST C: clean candidate satisfying all acceptance gates => PASS
+    def test_c_clean_candidate_satisfying_all_gates(self):
+        rule_findings = []
+        semantic_eval = {
+            "noul": {"value": 0.98, "confidence": 0.95, "reason": "all requirements met"},
+            "choice": {"value": "none", "confidence": 0.95, "reason": "no error"},
+            "score": {"value": 4.0, "confidence": 0.95, "reason": "production ready"},
+            "concerns": [],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "PASS")
+        self.assertEqual(failed_dims, [])
+        self.assertEqual(reas, "All configured gates and semantic thresholds passed")
+
+    # TEST D: critical violation => cannot PASS
+    def test_d_critical_violation_cannot_pass(self):
+        rule_findings = [
+            {"rule_id": "FR002", "name": "Locked requirement violated", "severity": "CRITICAL", "status": "triggered"},
+        ]
+        semantic_eval = {
+            "noul": {"value": 0.99, "confidence": 0.98, "reason": "high noul"},
+            "choice": {"value": "none", "confidence": 0.98, "reason": "none"},
+            "score": {"value": 4.0, "confidence": 0.98, "reason": "high score"},
+            "concerns": ["Rule FR002: triggered"],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertNotEqual(dec, "PASS")
+        self.assertEqual(dec, "REPAIR")
+        self.assertIn("rule:FR002", failed_dims)
+
+    # TEST E: low semantic confidence without definite actionable failure => HUMAN REVIEW
+    def test_e_low_semantic_confidence_without_definite_failure(self):
+        rule_findings = []
+        semantic_eval = {
+            "noul": {"value": 0.95, "confidence": 0.40, "reason": "good but uncertain"},
+            "choice": {"value": "none", "confidence": 0.95, "reason": "none"},
+            "score": {"value": 4.0, "confidence": 0.95, "reason": "ready"},
+            "concerns": [],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "HUMAN REVIEW")
+        self.assertEqual(reas, "Low semantic confidence")
+
+    # TEST F: triggered repair must not accidentally convert genuine human-authority / ambiguity conditions into REPAIR
+    def test_f_triggered_rule_with_unresolved_evidence_or_ambiguity(self):
+        # Subcase 1: Critical rule is triggered, but choice indicates unresolved evidence
+        rule_findings = [
+            {"rule_id": "FR008", "name": "Uncertainty asserted as certainty", "severity": "CRITICAL", "status": "triggered"},
+        ]
+        semantic_eval_insuff = {
+            "noul": {"value": 0.20, "confidence": 0.70, "reason": "missing evidence"},
+            "choice": {"value": "insufficient_evidence", "confidence": 0.85, "reason": "insufficient evidence"},
+            "score": {"value": 1.5, "confidence": 0.75, "reason": "issues"},
+            "concerns": ["Rule FR008: triggered"],
+            "repair_targets": [],
+        }
+        dec1, _, reas1 = semantic_decide(semantic_eval_insuff, self.thresholds, rule_findings)
+        self.assertEqual(dec1, "HUMAN REVIEW")
+        self.assertEqual(reas1, "Evidence or correction is unresolved")
+
+        # Subcase 2: Critical rule is triggered, but choice confidence is below confidence_min (0.45 < 0.65)
+        semantic_eval_low_conf = {
+            "noul": {"value": 0.15, "confidence": 0.70, "reason": "issues"},
+            "choice": {"value": "contradiction", "confidence": 0.45, "reason": "conflicting sources"},
+            "score": {"value": 1.5, "confidence": 0.75, "reason": "issues"},
+            "concerns": ["Rule FR008: triggered"],
+            "repair_targets": [],
+        }
+        dec2, _, reas2 = semantic_decide(semantic_eval_low_conf, self.thresholds, rule_findings)
+        self.assertEqual(dec2, "HUMAN REVIEW")
+        self.assertEqual(reas2, "Low semantic confidence")
+
+
+class EvidenceAuthorityResolvabilityTests(unittest.TestCase):
+    """
+    Step 1C Behavior-Driven Tests (Tests 1-10):
+    Distinguishing Actionable Output Defects (REPAIR) from Unresolved Evidence / Source Authority (HUMAN REVIEW).
+    """
+
+    def setUp(self):
+        self.thresholds = dict(THRESHOLDS)
+
+    # 1. Authoritative evidence + wrong candidate => REPAIR
+    def test_01_authoritative_evidence_plus_wrong_candidate(self):
+        rule_findings = [
+            {"rule_id": "FR003", "name": "Unsupported or invented claim", "severity": "CRITICAL", "status": "triggered"},
+        ]
+        semantic_eval = {
+            "noul": {"value": 0.05, "confidence": 0.90, "reason": "wrong candidate"},
+            "choice": {"value": "unsupported_claim", "confidence": 0.85, "reason": "Price differs from evidence"},
+            "score": {"value": 1.0, "confidence": 0.85, "reason": "major revision"},
+            "evidence_resolvable": {"value": 0.95, "confidence": 0.90, "reason": "Authoritative evidence provided"},
+            "concerns": ["Rule FR003: triggered"],
+            "repair_targets": [{"type": "unsupported_claim", "location": "candidate_output", "instruction": "Fix price"}],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "REPAIR")
+        self.assertEqual(reas, "Triggered critical failure rules")
+
+    # 2. Unverified source requiring authority judgment => HUMAN REVIEW
+    def test_02_unverified_source_requiring_authority_judgment(self):
+        rule_findings = [
+            {"rule_id": "FR003", "name": "Unsupported or invented claim", "severity": "CRITICAL", "status": "triggered"},
+        ]
+        semantic_eval = {
+            "noul": {"value": 0.05, "confidence": 0.75, "reason": "unverified claim asserted"},
+            "choice": {"value": "unsupported_claim", "confidence": 0.80, "reason": "Social media post not verified"},
+            "score": {"value": 1.0, "confidence": 0.80, "reason": "major revision"},
+            "evidence_resolvable": {"value": 0.05, "confidence": 0.90, "reason": "Evidence contains unverified hearsay"},
+            "concerns": ["Rule FR003: triggered", "evidence_resolvable below threshold (probability: 0.05)"],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "HUMAN REVIEW")
+        self.assertEqual(reas, "Unresolved source authority or evidence conflict")
+
+    # 3. Equally authoritative conflicting sources => HUMAN REVIEW
+    def test_03_equally_authoritative_conflicting_sources(self):
+        rule_findings = [
+            {"rule_id": "FR004", "name": "Internal contradiction", "severity": "CRITICAL", "status": "triggered"},
+        ]
+        semantic_eval = {
+            "noul": {"value": 0.10, "confidence": 0.80, "reason": "conflicting sources"},
+            "choice": {"value": "contradiction", "confidence": 0.80, "reason": "Two sources contradict without precedence"},
+            "score": {"value": 1.0, "confidence": 0.80, "reason": "major revision"},
+            "evidence_resolvable": {"value": 0.06, "confidence": 0.90, "reason": "Conflicting authoritative records"},
+            "concerns": ["Rule FR004: triggered", "evidence_resolvable below threshold (probability: 0.06)"],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "HUMAN REVIEW")
+        self.assertEqual(reas, "Unresolved source authority or evidence conflict")
+
+    # 4. Human approval/authority boundary => HUMAN REVIEW
+    def test_04_human_approval_authority_boundary(self):
+        rule_findings = []
+        semantic_eval = {
+            "noul": {"value": 0.15, "confidence": 0.80, "reason": "exceeds automated approval limit"},
+            "choice": {"value": "other", "confidence": 0.85, "reason": "Requires manager sign-off"},
+            "score": {"value": 2.0, "confidence": 0.80, "reason": "acceptable with issues"},
+            "evidence_resolvable": {"value": 0.15, "confidence": 0.90, "reason": "Human authorization boundary"},
+            "concerns": ["evidence_resolvable below threshold (probability: 0.15)"],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "HUMAN REVIEW")
+
+    # 5. Stale evidence for current-state question => HUMAN REVIEW
+    def test_05_stale_evidence_for_current_state_question(self):
+        rule_findings = []
+        semantic_eval = {
+            "noul": {"value": 0.10, "confidence": 0.80, "reason": "status snapshot 48h old"},
+            "choice": {"value": "insufficient_evidence", "confidence": 0.85, "reason": "Stale status"},
+            "score": {"value": 1.5, "confidence": 0.80, "reason": "revision needed"},
+            "evidence_resolvable": {"value": 0.12, "confidence": 0.90, "reason": "Stale snapshot requires human review"},
+            "concerns": ["evidence_resolvable below threshold (probability: 0.12)"],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "HUMAN REVIEW")
+
+    # 6. Absent information + candidate correctly says unknown/not established => PASS eligible
+    def test_06_absent_information_handled_correctly_eligible_for_pass(self):
+        rule_findings = []
+        semantic_eval = {
+            "noul": {"value": 0.95, "confidence": 0.90, "reason": "correctly communicates uncertainty"},
+            "choice": {"value": "none", "confidence": 0.95, "reason": "no error"},
+            "score": {"value": 4.0, "confidence": 0.95, "reason": "production ready"},
+            "evidence_resolvable": {"value": 0.88, "confidence": 0.90, "reason": "Evidence authoritatively establishes absent fact"},
+            "concerns": [],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "PASS")
+        self.assertEqual(failed_dims, [])
+        self.assertEqual(reas, "All configured gates and semantic thresholds passed")
+
+    # 7. Definite actionable defect + unrelated residual uncertainty => REPAIR
+    def test_07_definite_actionable_defect_plus_unrelated_residual_uncertainty(self):
+        rule_findings = [
+            {"rule_id": "FR002", "name": "Locked requirement violated", "severity": "CRITICAL", "status": "triggered"},
+            {"rule_id": "FR003", "name": "Unsupported or invented claim", "severity": "CRITICAL", "status": "uncertain"},
+        ]
+        semantic_eval = {
+            "noul": {"value": 0.05, "confidence": 0.90, "reason": "substantive issues"},
+            "choice": {"value": "instruction_violation", "confidence": 0.90, "reason": "Locked requirement violated"},
+            "score": {"value": 1.2, "confidence": 0.90, "reason": "major revision"},
+            "evidence_resolvable": {"value": 0.85, "confidence": 0.90, "reason": "Authoritative evidence provided"},
+            "concerns": ["Rule FR002: triggered", "Rule FR003: uncertain"],
+            "repair_targets": [{"type": "instruction_violation", "location": "candidate_output", "instruction": "restore locked"}],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "REPAIR")
+        self.assertEqual(reas, "Triggered critical failure rules")
+
+    # 8. Clean candidate => PASS
+    def test_08_clean_candidate_passes(self):
+        rule_findings = []
+        semantic_eval = {
+            "noul": {"value": 0.98, "confidence": 0.95, "reason": "all requirements met"},
+            "choice": {"value": "none", "confidence": 0.95, "reason": "no error"},
+            "score": {"value": 4.0, "confidence": 0.95, "reason": "production ready"},
+            "evidence_resolvable": {"value": 0.95, "confidence": 0.95, "reason": "authoritative evidence"},
+            "concerns": [],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "PASS")
+        self.assertEqual(reas, "All configured gates and semantic thresholds passed")
+
+    # 9. Critical violation => cannot PASS
+    def test_09_critical_violation_cannot_pass(self):
+        rule_findings = [
+            {"rule_id": "FR001", "name": "Missing explicit requirement", "severity": "CRITICAL", "status": "triggered"},
+        ]
+        semantic_eval = {
+            "noul": {"value": 0.99, "confidence": 0.98, "reason": "claims high"},
+            "choice": {"value": "none", "confidence": 0.98, "reason": "none"},
+            "score": {"value": 4.0, "confidence": 0.98, "reason": "ready"},
+            "evidence_resolvable": {"value": 0.90, "confidence": 0.90, "reason": "evidence authoritative"},
+            "concerns": ["Rule FR001: triggered"],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertNotEqual(dec, "PASS")
+        self.assertIn("rule:FR001", failed_dims)
+
+    # 10. Low semantic confidence without actionable defect => HUMAN REVIEW
+    def test_10_low_semantic_confidence_without_actionable_defect(self):
+        rule_findings = []
+        semantic_eval = {
+            "noul": {"value": 0.95, "confidence": 0.40, "reason": "uncertain"},
+            "choice": {"value": "none", "confidence": 0.95, "reason": "none"},
+            "score": {"value": 4.0, "confidence": 0.95, "reason": "ready"},
+            "evidence_resolvable": {"value": 0.90, "confidence": 0.90, "reason": "authoritative"},
+            "concerns": [],
+            "repair_targets": [],
+        }
+        dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
+        self.assertEqual(dec, "HUMAN REVIEW")
+        self.assertEqual(reas, "Low semantic confidence")
+
+
 if __name__ == '__main__':
     unittest.main()
+

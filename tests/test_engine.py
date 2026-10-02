@@ -27,7 +27,7 @@ def answer(good=True):
     a = {}
     for k,q in PROFILE['questions'].items():
         if q['type'] == 'noul':
-            positive = k in ('requirements_met','evidence_sufficient','ready_to_deliver')
+            positive = k in ('requirements_met','evidence_sufficient','ready_to_deliver', 'evidence_resolvable')
             a[k] = {'type':'noul','noul': .99 if positive else .01}
     if not good:
         a['requirements_met']['noul'] = .01

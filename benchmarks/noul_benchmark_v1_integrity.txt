@@ -1,0 +1,25 @@
+NOUL BENCHMARK v1.0 — INTEGRITY SPECIFICATION
+
+Canonical fixture: noul_benchmark_v1_locked.json
+Cases: 36
+Distribution: ACCEPT=12, REPAIR=16, HUMAN_REVIEW=8
+Expected IDs: A01, A02, A03, A04, A05, A06, A07, A08, R01, R02, R03, R04, R05, R06, R07, R08, H01, H02, H03, H04, H05, H06, H07, H08, X01, X02, X03, X04, X05, X06, X07, X08, X09, X10, X11, X12
+Pre-integrity canonical SHA-256: 72c885103538fb7cc877ddbf5bb7ecfbaf209226c9b85cb29f0cdb5cacec809a
+
+MANDATORY PRE-RUN GATES
+1. Assert case count == 36.
+2. Assert IDs exactly match the expected ordered ID list.
+3. Assert labels total ACCEPT=12, REPAIR=16, HUMAN_REVIEW=8.
+4. Assert all IDs are unique.
+5. Assert every case contains requirement, available_evidence, candidate_output,
+   gold_label, gold_reason, expected_noul_band, critical_violation,
+   pass_allowed, human_review_required.
+6. Do not regenerate, paraphrase, relabel, reorder semantics, or substitute cases.
+7. Do not modify JEV thresholds, semantic logic, policy, Choice, or Score for baseline.
+8. Run current engine unchanged.
+9. If fixture integrity fails: STOP before any API/evaluator calls.
+10. Report baseline only; do not calibrate or modify core code.
+
+GOLD DATASET RULE
+Engine behavior may be changed later to satisfy validated gold truth.
+Gold truth must never be changed merely to fit current engine behavior.
