@@ -107,15 +107,18 @@ python run.py examples/request-only.json --env-file .env --output result.json
 
 Environment variables override `.env`. `--env-file` explicitly loads a simple `KEY=value` format, without shell interpolation; it is not a complete dotenv parser.
 
-### 8. Semantic evaluation flag
+### 8. Semantic evaluation default and flags
 
-Pass `--semantic` to enable the full Noul + Choice + Score evaluation pipeline when running the CLI directly:
+Semantic Noul + Choice + Score evaluation is **enabled by default**. Normal execution requires no semantic flag:
 
 ```bash
-python run.py examples/input.json --env-file .env --semantic
+python run.py examples/input.json --env-file .env
 ```
 
-The benchmark runner (`benchmarks/run_benchmark.py`) always uses the semantic pipeline regardless of this flag.
+- `--semantic` remains accepted as an explicit redundant enable flag.
+- `--no-semantic` explicitly selects the legacy non-semantic path.
+
+The benchmark runner (`benchmarks/run_benchmark.py`) always uses the semantic pipeline regardless of these flags.
 
 ### 9. Benchmark
 
