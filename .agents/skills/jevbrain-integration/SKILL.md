@@ -106,19 +106,21 @@ actually executable.
 
 Run from the JevBrain repository root.
 
-Typical live evaluation:
+Normal / default execution (semantic evaluation is enabled by default):
 
 ```bash
 python run.py <input.json> --env-file .env --output <result.json>
 ```
 
-On Windows, `py` may be used instead of `python`.
+This already uses the full semantic Noul + Choice + Score evaluation pipeline. The `--semantic` flag remains supported as an explicit redundant flag, but is not required.
 
-When the task requires the full Noul + Choice + Score semantic pipeline, use:
+To explicitly opt out and run legacy non-semantic evaluation without the semantic pipeline, pass `--no-semantic`:
 
 ```bash
-python run.py <input.json> --env-file .env --output <result.json> --semantic
+python run.py <input.json> --env-file .env --output <result.json> --no-semantic
 ```
+
+On Windows, `py` may be used instead of `python`.
 
 Default failure rules are loaded from `rules/universal.json`.
 
