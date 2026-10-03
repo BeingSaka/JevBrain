@@ -4,11 +4,13 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 
+from jev_engine.__main__ import get_parser, main
 from jev_engine.engine import Engine
 from jev_engine.semantic import (
     extract_semantic_evaluation,
@@ -756,6 +758,41 @@ class EvidenceAuthorityResolvabilityTests(unittest.TestCase):
         dec, failed_dims, reas = semantic_decide(semantic_eval, self.thresholds, rule_findings)
         self.assertEqual(dec, "HUMAN REVIEW")
         self.assertEqual(reas, "Low semantic confidence")
+
+
+class SemanticCLITests(unittest.TestCase):
+    def test_cli_parser_defaults_to_semantic_true(self):
+        parser = get_parser()
+        args = parser.parse_args(["examples/input.json"])
+        self.assertIs(args.semantic, True)
+
+    def test_cli_parser_no_semantic_flag(self):
+        parser = get_parser()
+        args = parser.parse_args(["examples/input.json", "--no-semantic"])
+        self.assertIs(args.semantic, False)
+
+    def test_cli_parser_explicit_semantic_flag(self):
+        parser = get_parser()
+        args = parser.parse_args(["examples/input.json", "--semantic"])
+        self.assertIs(args.semantic, True)
+
+    @patch('jev_engine.__main__.Engine')
+    def test_cli_main_passes_semantic_true_by_default(self, mock_engine_cls):
+        mock_instance = mock_engine_cls.return_value
+        mock_instance.run.return_value = {"decision": "PASS"}
+        code = main(["examples/input.json"])
+        self.assertEqual(code, 0)
+        self.assertIn('semantic_evaluation_enabled', mock_engine_cls.call_args.kwargs)
+        self.assertIs(mock_engine_cls.call_args.kwargs['semantic_evaluation_enabled'], True)
+
+    @patch('jev_engine.__main__.Engine')
+    def test_cli_main_passes_semantic_false_with_no_semantic(self, mock_engine_cls):
+        mock_instance = mock_engine_cls.return_value
+        mock_instance.run.return_value = {"decision": "PASS"}
+        code = main(["examples/input.json", "--no-semantic"])
+        self.assertEqual(code, 0)
+        self.assertIn('semantic_evaluation_enabled', mock_engine_cls.call_args.kwargs)
+        self.assertIs(mock_engine_cls.call_args.kwargs['semantic_evaluation_enabled'], False)
 
 
 if __name__ == '__main__':
