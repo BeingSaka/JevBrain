@@ -20,7 +20,7 @@ def load_env(path):
         if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'): value = value[1:-1]
         os.environ.setdefault(key, value)
 
-def main():
+def get_parser():
     parser = argparse.ArgumentParser(description="Jev Universal Evaluation & Decision Engine")
     parser.add_argument("input", help="JSON input path")
     parser.add_argument("--env-file")
@@ -30,8 +30,12 @@ def main():
     parser.add_argument("--thresholds", default="config/thresholds.json")
     parser.add_argument("--rules", action="append", help="Rule pack JSON; repeat to combine packs")
     parser.add_argument("--no-rules", action="store_true", help="Run unchanged V1 evaluation without failure rules")
-    parser.add_argument("--semantic", action="store_true", help="Enable Noul + Choice + Score semantic evaluation pipeline")
-    args = parser.parse_args()
+    parser.add_argument("--semantic", action=argparse.BooleanOptionalAction, default=True, help="Enable/disable Noul + Choice + Score semantic evaluation pipeline (default: enabled)")
+    return parser
+
+def main(argv=None):
+    parser = get_parser()
+    args = parser.parse_args(argv)
     try:
         if args.env_file: load_env(args.env_file)
         profile = json.loads(Path(args.profile).read_text(encoding="utf-8"))
