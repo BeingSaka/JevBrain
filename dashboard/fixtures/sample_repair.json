@@ -1,0 +1,294 @@
+{
+  "run_id": "demo-repair-001",
+  "decision": "PASS",
+  "reason": "All configured gates and semantic thresholds passed",
+  "final_output": "Atlas launches on 15 October 2026. Pricing has not been announced.",
+  "repairs": 1,
+  "previous_candidate": "Atlas launches on 20 October 2026. In today's fast-moving world, innovation is our passion. We also built an unrequested landing page and $50/mo subscription tier.",
+  "worker_calls": [
+    {
+      "operation": "repair",
+      "attempt": 0,
+      "status": "success",
+      "usage": {
+        "prompt_eval_count": 85,
+        "eval_count": 28
+      },
+      "elapsed_seconds": 1.42
+    }
+  ],
+  "history": [
+    {
+      "run_id": "demo-repair-001",
+      "task_type": "text",
+      "worker": "command",
+      "worker_calls": [],
+      "evaluation_profile": "universal",
+      "profile_sha256": "c4596b7165ef54bd1bb80e7565655069e29a488feccef5d713e0b6aa36187f72",
+      "thresholds": {
+        "accept_min": 0.9,
+        "risk_max": 0.18,
+        "failure_min": 0.8,
+        "score_min": 3.5,
+        "confidence_min": 0.65
+      },
+      "candidate_sha256": "demo-sha256-candidate-initial",
+      "state_sha256": "demo-sha256-state-initial",
+      "policy_decision": "REPAIR",
+      "rule_findings": [
+        {
+          "rule_id": "FR002",
+          "name": "Locked requirement violated",
+          "severity": "CRITICAL",
+          "category": "instruction_violation",
+          "status": "triggered",
+          "probability": 0.96,
+          "method": "jev-noul",
+          "policy_impact": "blocking",
+          "repair_instruction": "Restore the locked launch date of 15 October 2026."
+        },
+        {
+          "rule_id": "FR005",
+          "name": "Generic or filler content",
+          "severity": "WARNING",
+          "category": "generic_output",
+          "status": "triggered",
+          "probability": 0.89,
+          "method": "jev-noul",
+          "policy_impact": "blocking",
+          "repair_instruction": "Remove generic filler ('In today's fast-moving world, innovation is our passion')."
+        },
+        {
+          "rule_id": "FR009",
+          "name": "Scope creep",
+          "severity": "CRITICAL",
+          "category": "instruction_violation",
+          "status": "triggered",
+          "probability": 0.94,
+          "method": "jev-noul",
+          "policy_impact": "blocking",
+          "repair_instruction": "Do not mention unrequested landing page or pricing tiers."
+        }
+      ],
+      "triggered_rule_ids": [
+        "FR002",
+        "FR005",
+        "FR009"
+      ],
+      "repair_performed": false,
+      "repaired_from_rule_ids": [],
+      "repair_requested": true,
+      "retry_count": 0,
+      "primary_failure": "instruction_violation",
+      "failed_dimensions": [
+        "instruction_violation_present",
+        "unsupported_claim_present",
+        "rule:FR002",
+        "rule:FR005",
+        "rule:FR009"
+      ],
+      "reason": "Confident actionable failure (instruction_violation)",
+      "elapsed_seconds": 0.448,
+      "evaluator": "typesafe-http",
+      "estimated_jev_usd": 0.000096,
+      "evaluation_latency_ms": 448,
+      "evaluation_cost_usd": 0.000096,
+      "checks_performed": 16,
+      "rules_triggered": [
+        "FR002",
+        "FR005",
+        "FR009"
+      ],
+      "repair_count": 0,
+      "semantic_evaluation": {
+        "noul": {
+          "value": 0.38,
+          "confidence": 0.92,
+          "reason": "Substantive issues detected (acceptance probability 0.38)"
+        },
+        "choice": {
+          "value": "instruction_violation",
+          "confidence": 0.94,
+          "reason": "Primary failure classified as instruction_violation"
+        },
+        "score": {
+          "value": 2.15,
+          "confidence": 0.88,
+          "reason": "Major revision: substantial omissions, violations or unsupported assertions prevent use."
+        },
+        "concerns": [
+          "instruction_violation_present (probability: 0.96)",
+          "unsupported_claim_present (probability: 0.94)",
+          "Rule FR002 (Locked requirement violated): triggered",
+          "Rule FR005 (Generic or filler content): triggered",
+          "Rule FR009 (Scope creep): triggered"
+        ],
+        "repair_targets": [
+          {
+            "type": "instruction_violation",
+            "location": "candidate_output",
+            "instruction": "Restore the locked launch date of 15 October 2026."
+          },
+          {
+            "type": "generic_output",
+            "location": "candidate_output",
+            "instruction": "Remove generic filler ('In today's fast-moving world, innovation is our passion')."
+          },
+          {
+            "type": "instruction_violation",
+            "location": "candidate_output",
+            "instruction": "Do not mention unrequested landing page or pricing tiers."
+          }
+        ],
+        "evidence_resolvable": {
+          "value": 0.95,
+          "confidence": 1.0,
+          "reason": "Supplied evidence is authoritative and resolvable"
+        }
+      }
+    },
+    {
+      "run_id": "demo-repair-001",
+      "task_type": "text",
+      "worker": "command",
+      "worker_calls": [
+        {
+          "operation": "repair",
+          "attempt": 0,
+          "status": "success",
+          "usage": {
+            "prompt_eval_count": 85,
+            "eval_count": 28
+          },
+          "elapsed_seconds": 1.42
+        }
+      ],
+      "evaluation_profile": "universal",
+      "profile_sha256": "c4596b7165ef54bd1bb80e7565655069e29a488feccef5d713e0b6aa36187f72",
+      "thresholds": {
+        "accept_min": 0.9,
+        "risk_max": 0.18,
+        "failure_min": 0.8,
+        "score_min": 3.5,
+        "confidence_min": 0.65
+      },
+      "candidate_sha256": "demo-sha256-candidate-repaired",
+      "state_sha256": "demo-sha256-state-repaired",
+      "policy_decision": "PASS",
+      "rule_findings": [
+        {
+          "rule_id": "FR001",
+          "name": "Missing explicit requirement",
+          "severity": "CRITICAL",
+          "category": "missing_requirement",
+          "status": "clear",
+          "probability": 0.04,
+          "method": "jev-reused",
+          "policy_impact": "none",
+          "repair_instruction": null
+        },
+        {
+          "rule_id": "FR002",
+          "name": "Locked requirement violated",
+          "severity": "CRITICAL",
+          "category": "instruction_violation",
+          "status": "clear",
+          "probability": 0.04,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null
+        },
+        {
+          "rule_id": "FR005",
+          "name": "Generic or filler content",
+          "severity": "WARNING",
+          "category": "generic_output",
+          "status": "clear",
+          "probability": 0.05,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null
+        },
+        {
+          "rule_id": "FR009",
+          "name": "Scope creep",
+          "severity": "CRITICAL",
+          "category": "instruction_violation",
+          "status": "clear",
+          "probability": 0.04,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null
+        }
+      ],
+      "triggered_rule_ids": [],
+      "repair_performed": true,
+      "repaired_from_rule_ids": [
+        "FR002",
+        "FR005",
+        "FR009"
+      ],
+      "repair_requested": false,
+      "retry_count": 1,
+      "primary_failure": "none",
+      "failed_dimensions": [],
+      "reason": "All configured gates and semantic thresholds passed",
+      "elapsed_seconds": 0.395,
+      "evaluator": "typesafe-http",
+      "estimated_jev_usd": 0.000089,
+      "evaluation_latency_ms": 395,
+      "evaluation_cost_usd": 0.000089,
+      "checks_performed": 16,
+      "rules_triggered": [],
+      "repair_count": 1,
+      "semantic_evaluation": {
+        "noul": {
+          "value": 0.97,
+          "confidence": 0.94,
+          "reason": "All mandatory requirements are satisfied and output is deliverable"
+        },
+        "choice": {
+          "value": "none",
+          "confidence": 0.98,
+          "reason": "No material failure detected"
+        },
+        "score": {
+          "value": 3.92,
+          "confidence": 0.90,
+          "reason": "Production ready: directly usable, specific, complete and consistent with all supplied requirements and evidence."
+        },
+        "concerns": [],
+        "repair_targets": [],
+        "evidence_resolvable": {
+          "value": 0.95,
+          "confidence": 1.0,
+          "reason": "Supplied evidence is authoritative and resolvable"
+        }
+      }
+    }
+  ],
+  "semantic_evaluation": {
+    "noul": {
+      "value": 0.97,
+      "confidence": 0.94,
+      "reason": "All mandatory requirements are satisfied and output is deliverable"
+    },
+    "choice": {
+      "value": "none",
+      "confidence": 0.98,
+      "reason": "No material failure detected"
+    },
+    "score": {
+      "value": 3.92,
+      "confidence": 0.90,
+      "reason": "Production ready: directly usable, specific, complete and consistent with all supplied requirements and evidence."
+    },
+    "concerns": [],
+    "repair_targets": [],
+    "evidence_resolvable": {
+      "value": 0.95,
+      "confidence": 1.0,
+      "reason": "Supplied evidence is authoritative and resolvable"
+    }
+  }
+}

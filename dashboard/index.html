@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JevBrain Decision Console</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Bar Navigation & Source Control -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-title">JEVBRAIN</span>
+        <span class="brand-subtitle">Decision Console V1</span>
+      </div>
+
+      <div class="source-controls">
+        <label for="sourceSelect" class="source-label">Source:</label>
+        <select id="sourceSelect" class="source-dropdown">
+          <option value="api-result">Current result.json</option>
+          <option value="fixture-pass">Sample PASS</option>
+          <option value="fixture-repair">Sample REPAIR (1 repair)</option>
+          <option value="fixture-human-review">Sample HUMAN REVIEW</option>
+        </select>
+        <button id="refreshBtn" class="btn btn-secondary" title="Reload from server">Refresh</button>
+        <label for="fileInput" class="btn btn-secondary file-upload-label" title="Load custom JSON file">
+          Upload JSON
+          <input type="file" id="fileInput" accept=".json,application/json" hidden>
+        </label>
+        <button id="pasteBtn" class="btn btn-secondary" title="Paste raw JSON">Paste JSON</button>
+        <button id="helpBtn" class="btn btn-secondary" title="Server modes & usage guide">Help</button>
+      </div>
+    </header>
+
+    <!-- Help / Modes Modal -->
+    <div id="helpModal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Console Modes &amp; Setup Guide</h3>
+          <button id="closeHelpModal" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body help-modal-body">
+          <div class="mode-info-block">
+            <h4 class="mode-title-full">PRIMARY / FULL MODE</h4>
+            <pre class="mode-cmd mono">python dashboard/server.py</pre>
+            <p class="mode-desc">This provides:</p>
+            <ul class="mode-list">
+              <li>Dashboard static assets</li>
+              <li><code>/api/result</code></li>
+              <li><code>/api/logs</code></li>
+              <li>Live local result/log integration</li>
+            </ul>
+          </div>
+
+          <div class="mode-info-block">
+            <h4 class="mode-title-static">STATIC-ONLY MODE</h4>
+            <pre class="mode-cmd mono">python -m http.server 8080 --directory dashboard</pre>
+            <p class="mode-desc">This may be used only for:</p>
+            <ul class="mode-list">
+              <li>Bundled fixtures</li>
+              <li>File upload</li>
+              <li>Pasted JSON</li>
+            </ul>
+            <p class="mode-warning"><strong>Notice:</strong> It does NOT provide <code>/api/result</code> or <code>/api/logs</code>.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="closeHelpBtn" class="btn btn-primary">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paste Modal -->
+    <div id="pasteModal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Load Raw Jev Evaluation JSON</h3>
+          <button id="closePasteModal" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <textarea id="pasteTextarea" class="paste-textarea" placeholder="Paste result.json or log event JSON here..."></textarea>
+          <div id="pasteError" class="modal-error hidden"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelPasteBtn" class="btn btn-secondary">Cancel</button>
+          <button id="submitPasteBtn" class="btn btn-primary">Load Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="console-body" id="consoleBody">
+      <!-- 1. TOP STATUS BANNER -->
+      <section id="topStatusBar" class="top-status-bar status-pass">
+        <div class="status-left">
+          <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span class="status-badge" id="statusBadge">PASS</span>
+          </div>
+          <div class="status-meta">
+            <span class="meta-item"><span class="meta-label">RUN ID:</span> <span id="metaRunId" class="mono">--</span></span>
+            <span class="meta-item"><span class="meta-label">PROFILE:</span> <span id="metaProfile" class="mono">universal</span></span>
+            <span class="meta-item"><span class="meta-label">TASK:</span> <span id="metaTaskType" class="mono">text</span></span>
+          </div>
+        </div>
+        <div class="status-right">
+          <div class="repair-activity-indicator" id="repairActivityIndicator">
+            <span class="activity-label">REPAIR ACTIVITY:</span>
+            <span class="activity-badge" id="repairActivityBadge">0 REPAIRS</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. FINAL DECISION SECTION -->
+      <section class="card section-final-decision">
+        <div class="card-header">
+          <h2>Final Decision & Deliverable</h2>
+          <span class="tag-decision" id="finalDecisionTag">PASS</span>
+        </div>
+        <div class="card-body">
+          <div class="decision-reason-box">
+            <span class="reason-label">REASON:</span>
+            <span class="reason-text" id="finalReason">--</span>
+          </div>
+
+          <div class="output-container">
+            <div class="output-header">
+              <span class="output-title">FINAL CANDIDATE OUTPUT</span>
+              <div class="output-meta">
+                <span id="outputCharCount" class="char-count">0 chars</span>
+                <button id="copyOutputBtn" class="btn btn-sm btn-secondary">Copy</button>
+              </div>
+            </div>
+            <pre class="output-text" id="finalOutput">--</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. EVALUATION METRICS SECTION -->
+      <section class="card section-metrics">
+        <div class="card-header">
+          <h2>Evaluation Metrics</h2>
+          <span class="card-subhead">Engine telemetry & semantic judgment</span>
+        </div>
+        <div class="card-body">
+          <!-- Operational Telemetry Grid -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <span class="metric-title">Repairs</span>
+              <span class="metric-value mono" id="metricRepairs">0</span>
+              <span class="metric-sub" id="metricRepairsSub">Max 2 allowed</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-title">Retries</span>
+              <span class="metric-value mono" id="metricRetries">0</span>
+              <span class="metric-sub">Worker attempts</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-title">Eval Latency</span>
+              <span class="metric-value mono" id="metricLatency">--</span>
+              <span class="metric-sub" id="metricLatencySub">Jev evaluation</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-title">Estimated Cost</span>
+              <span class="metric-value mono" id="metricCost">--</span>
+              <span class="metric-sub">USD per eval</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-title">Checks Performed</span>
+              <span class="metric-value mono" id="metricChecks">--</span>
+              <span class="metric-sub">Evaluator gates</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-title">Primary Failure</span>
+              <span class="metric-value mono badge-failure" id="metricPrimaryFailure">none</span>
+              <span class="metric-sub">Classifier choice</span>
+            </div>
+          </div>
+
+          <!-- Semantic Pipeline Metrics Grid -->
+          <div class="semantic-metrics-container">
+            <h3 class="subsection-title">Semantic Evaluation Pipeline (Noul &bull; Choice &bull; Score)</h3>
+            <div class="semantic-grid">
+              <div class="semantic-card" id="cardNoul">
+                <div class="semantic-card-header">
+                  <span class="dim-name">NOUL (Acceptance Probability)</span>
+                  <span class="dim-badge" id="semNoulBadge">--</span>
+                </div>
+                <div class="semantic-values">
+                  <div class="val-group">
+                    <span class="val-label">Value</span>
+                    <span class="val-num mono" id="semNoulVal">--</span>
+                  </div>
+                  <div class="val-group">
+                    <span class="val-label">Confidence</span>
+                    <span class="val-num mono" id="semNoulConf">--</span>
+                  </div>
+                </div>
+                <div class="semantic-reason" id="semNoulReason">--</div>
+              </div>
+
+              <div class="semantic-card" id="cardChoice">
+                <div class="semantic-card-header">
+                  <span class="dim-name">CHOICE (Failure Classification)</span>
+                  <span class="dim-badge" id="semChoiceBadge">--</span>
+                </div>
+                <div class="semantic-values">
+                  <div class="val-group">
+                    <span class="val-label">Value</span>
+                    <span class="val-num mono" id="semChoiceVal">--</span>
+                  </div>
+                  <div class="val-group">
+                    <span class="val-label">Confidence</span>
+                    <span class="val-num mono" id="semChoiceConf">--</span>
+                  </div>
+                </div>
+                <div class="semantic-reason" id="semChoiceReason">--</div>
+              </div>
+
+              <div class="semantic-card" id="cardScore">
+                <div class="semantic-card-header">
+                  <span class="dim-name">SCORE (Production Readiness)</span>
+                  <span class="dim-badge" id="semScoreBadge">--</span>
+                </div>
+                <div class="semantic-values">
+                  <div class="val-group">
+                    <span class="val-label">Score (0-4)</span>
+                    <span class="val-num mono" id="semScoreVal">--</span>
+                  </div>
+                  <div class="val-group">
+                    <span class="val-label">Confidence</span>
+                    <span class="val-num mono" id="semScoreConf">--</span>
+                  </div>
+                </div>
+                <div class="semantic-reason" id="semScoreReason">--</div>
+              </div>
+
+              <div class="semantic-card" id="cardEvidence">
+                <div class="semantic-card-header">
+                  <span class="dim-name">EVIDENCE RESOLVABILITY</span>
+                  <span class="dim-badge" id="semEvidenceBadge">--</span>
+                </div>
+                <div class="semantic-values">
+                  <div class="val-group">
+                    <span class="val-label">Value</span>
+                    <span class="val-num mono" id="semEvidenceVal">--</span>
+                  </div>
+                  <div class="val-group">
+                    <span class="val-label">Confidence</span>
+                    <span class="val-num mono" id="semEvidenceConf">--</span>
+                  </div>
+                </div>
+                <div class="semantic-reason" id="semEvidenceReason">--</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dimensional & Rule Findings List -->
+          <div class="findings-container">
+            <div class="findings-block">
+              <span class="findings-label">Triggered Failure Rules:</span>
+              <div class="pills-list" id="pillsTriggeredRules">
+                <span class="pill pill-none">None</span>
+              </div>
+            </div>
+            <div class="findings-block">
+              <span class="findings-label">Failed Dimensions:</span>
+              <div class="pills-list" id="pillsFailedDimensions">
+                <span class="pill pill-none">None</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. BEFORE -> AFTER REPAIR SECTION -->
+      <section class="card section-repair-diff" id="sectionRepairDiff">
+        <div class="card-header">
+          <h2>Before &rarr; After Repair</h2>
+          <span class="badge-repair-status" id="repairStatusBadge">No repair performed</span>
+        </div>
+        <div class="card-body">
+          <div id="noRepairBanner" class="empty-state-banner">
+            <span class="empty-icon">&check;</span>
+            <span class="empty-text">No repair performed &mdash; Candidate passed on initial evaluation without revisions.</span>
+          </div>
+
+          <div id="repairDiffContent" class="repair-diff-content hidden">
+            <div class="repair-meta-summary">
+              <div class="repair-meta-box">
+                <span class="repair-meta-key">REPAIRS CONDUCTED:</span>
+                <span class="repair-meta-val mono" id="diffRepairCount">1</span>
+              </div>
+              <div class="repair-meta-box">
+                <span class="repair-meta-key">DEFECT REASON:</span>
+                <span class="repair-meta-val" id="diffRepairReason">--</span>
+              </div>
+            </div>
+
+            <div class="diff-split-view">
+              <div class="diff-panel before-panel">
+                <div class="diff-panel-header">
+                  <span class="panel-tag tag-before">BEFORE REPAIR</span>
+                  <span class="panel-sub" id="beforePanelSub">Candidate output</span>
+                </div>
+                <pre class="diff-text mono" id="beforeOutput">--</pre>
+              </div>
+              <div class="diff-panel after-panel">
+                <div class="diff-panel-header">
+                  <span class="panel-tag tag-after">AFTER REPAIR</span>
+                  <span class="panel-sub" id="afterPanelSub">Final deliverable</span>
+                </div>
+                <pre class="diff-text mono" id="afterOutput">--</pre>
+              </div>
+            </div>
+
+            <div class="repair-rules-feedback" id="repairRulesFeedbackBlock">
+              <span class="feedback-title">Triggered Repair Feedback:</span>
+              <div class="feedback-rules-list" id="feedbackRulesList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. EVALUATION HISTORY ATTEMPTS -->
+      <section class="card section-history">
+        <div class="card-header">
+          <h2>Evaluation History</h2>
+          <span class="card-subhead">Sequential evaluation attempts & worker events</span>
+        </div>
+        <div class="card-body">
+          <div class="history-table-wrapper">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Attempt</th>
+                  <th>Decision</th>
+                  <th>Reason</th>
+                  <th>Triggered Rules</th>
+                  <th>Failed Dimensions</th>
+                  <th>Latency</th>
+                  <th>Cost (USD)</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr>
+                  <td colspan="7" class="text-center text-muted">No history events loaded</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Jev Universal Evaluation &amp; Decision Engine &bull; Local Decision Console V1</span>
+      <span class="footer-meta" id="footerMeta">Ready</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

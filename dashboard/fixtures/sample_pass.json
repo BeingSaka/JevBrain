@@ -1,0 +1,328 @@
+{
+  "run_id": "demo-pass-001",
+  "decision": "PASS",
+  "reason": "All configured gates and semantic thresholds passed",
+  "final_output": "Atlas launches on 15 October 2026. Pricing has not been announced.",
+  "repairs": 0,
+  "worker_calls": [
+    {
+      "operation": "generate",
+      "attempt": 0,
+      "status": "success",
+      "usage": null,
+      "elapsed_seconds": 15.655999999959022
+    }
+  ],
+  "history": [
+    {
+      "run_id": "demo-pass-001",
+      "task_type": "text",
+      "worker": "command",
+      "worker_calls": [
+        {
+          "operation": "generate",
+          "attempt": 0,
+          "status": "success",
+          "usage": null,
+          "elapsed_seconds": 15.655999999959022
+        }
+      ],
+      "evaluation_profile": "universal",
+      "profile_sha256": "c4596b7165ef54bd1bb80e7565655069e29a488feccef5d713e0b6aa36187f72",
+      "thresholds": {
+        "accept_min": 0.9,
+        "risk_max": 0.18,
+        "failure_min": 0.8,
+        "score_min": 3.5,
+        "confidence_min": 0.65
+      },
+      "candidate_sha256": "demo-sha256-candidate-pass-001",
+      "state_sha256": "demo-sha256-state-pass-001",
+      "jev_results": {
+        "model": "jev-1.13.0",
+        "answers": {
+          "requirements_met": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "evidence_sufficient": {
+            "type": "noul",
+            "noul": 0.96
+          },
+          "evidence_resolvable": {
+            "type": "noul",
+            "noul": 0.87
+          },
+          "ready_to_deliver": {
+            "type": "noul",
+            "noul": 0.94
+          },
+          "critical_requirement_missing": {
+            "type": "noul",
+            "noul": 0.05
+          },
+          "instruction_violation_present": {
+            "type": "noul",
+            "noul": 0.06
+          },
+          "internal_contradiction_present": {
+            "type": "noul",
+            "noul": 0.02
+          },
+          "unsupported_claim_present": {
+            "type": "noul",
+            "noul": 0.06
+          },
+          "primary_failure": {
+            "type": "choice",
+            "choice": "none",
+            "confidence": 0.98,
+            "probabilities": {
+              "contradiction": 0.0,
+              "instruction_violation": 0.0,
+              "generic_output": 0.0,
+              "insufficient_evidence": 0.0,
+              "none": 1.0,
+              "unsupported_claim": 0.0,
+              "format_violation": 0.0,
+              "missing_requirement": 0.0,
+              "other": 0.0
+            }
+          },
+          "production_readiness": {
+            "type": "score",
+            "score": 3.74,
+            "confidence": 0.78,
+            "legend": {
+              "0": "Unusable: absent, irrelevant or fundamentally fails the task.",
+              "1": "Major revision: substantial omissions, violations or unsupported assertions prevent use.",
+              "2": "Acceptable with issues: partly useful but identifiable material corrections remain.",
+              "3": "Strong: complete, useful and consistent; only minor optional polish remains.",
+              "4": "Production ready: directly usable, specific, complete and consistent with all supplied requirements and evidence."
+            },
+            "probabilities": {
+              "0": 0.0,
+              "1": 0.0,
+              "2": 0.03,
+              "3": 0.19,
+              "4": 0.78
+            }
+          },
+          "failure_FR002": {
+            "type": "noul",
+            "noul": 0.05
+          },
+          "failure_FR005": {
+            "type": "noul",
+            "noul": 0.05
+          },
+          "failure_FR006": {
+            "type": "noul",
+            "noul": 0.07
+          },
+          "failure_FR008": {
+            "type": "noul",
+            "noul": 0.06
+          },
+          "failure_FR009": {
+            "type": "noul",
+            "noul": 0.07
+          },
+          "failure_FR010": {
+            "type": "noul",
+            "noul": 0.04
+          }
+        },
+        "usage": {
+          "input_tokens": 2263,
+          "output_tokens": 395
+        }
+      },
+      "policy_decision": "PASS",
+      "rule_library_sha256": "c28ac5258716b4b61634aebacc217befd2695ab23088be4f58739c1c1a580a98",
+      "rule_findings": [
+        {
+          "rule_id": "FR001",
+          "name": "Missing explicit requirement",
+          "severity": "CRITICAL",
+          "category": "missing_requirement",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.05,
+          "method": "jev-reused",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        },
+        {
+          "rule_id": "FR002",
+          "name": "Locked requirement violated",
+          "severity": "CRITICAL",
+          "category": "instruction_violation",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.05,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        },
+        {
+          "rule_id": "FR003",
+          "name": "Unsupported or invented claim",
+          "severity": "CRITICAL",
+          "category": "unsupported_claim",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.06,
+          "method": "jev-reused",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        },
+        {
+          "rule_id": "FR004",
+          "name": "Internal contradiction",
+          "severity": "CRITICAL",
+          "category": "contradiction",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.02,
+          "method": "jev-reused",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        },
+        {
+          "rule_id": "FR005",
+          "name": "Generic or filler content",
+          "severity": "WARNING",
+          "category": "generic_output",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.05,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        },
+        {
+          "rule_id": "FR006",
+          "name": "Requested format violated",
+          "severity": "CRITICAL",
+          "category": "format_violation",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.07,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        },
+        {
+          "rule_id": "FR008",
+          "name": "Uncertainty asserted as certainty",
+          "severity": "CRITICAL",
+          "category": "unsupported_claim",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.06,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        },
+        {
+          "rule_id": "FR009",
+          "name": "Scope creep",
+          "severity": "CRITICAL",
+          "category": "instruction_violation",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.07,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        },
+        {
+          "rule_id": "FR010",
+          "name": "Material repetition",
+          "severity": "WARNING",
+          "category": "generic_output",
+          "requires_previous_candidate": false,
+          "status": "clear",
+          "probability": 0.04,
+          "method": "jev-noul",
+          "policy_impact": "none",
+          "repair_instruction": null,
+          "repeated_after_repair": false
+        }
+      ],
+      "triggered_rule_ids": [],
+      "repair_performed": false,
+      "repaired_from_rule_ids": [],
+      "repair_requested": false,
+      "retry_count": 0,
+      "primary_failure": "none",
+      "failed_dimensions": [],
+      "reason": "All configured gates and semantic thresholds passed",
+      "elapsed_seconds": 0.4220000000204891,
+      "evaluator": "typesafe-http",
+      "estimated_jev_usd": 9.504600000000001e-05,
+      "evaluation_latency_ms": 422,
+      "evaluation_cost_usd": 9.504600000000001e-05,
+      "checks_performed": 16,
+      "rules_triggered": [],
+      "repair_count": 0,
+      "semantic_evaluation": {
+        "noul": {
+          "value": 0.94,
+          "confidence": 0.88,
+          "reason": "All mandatory requirements are satisfied and output is deliverable"
+        },
+        "choice": {
+          "value": "none",
+          "confidence": 0.98,
+          "reason": "No material failure detected"
+        },
+        "score": {
+          "value": 3.74,
+          "confidence": 0.78,
+          "reason": "Production ready: directly usable, specific, complete and consistent with all supplied requirements and evidence."
+        },
+        "concerns": [],
+        "repair_targets": [],
+        "evidence_resolvable": {
+          "value": 0.87,
+          "confidence": 1.0,
+          "reason": "Supplied evidence is authoritative and resolvable"
+        }
+      }
+    }
+  ],
+  "semantic_evaluation": {
+    "noul": {
+      "value": 0.94,
+      "confidence": 0.88,
+      "reason": "All mandatory requirements are satisfied and output is deliverable"
+    },
+    "choice": {
+      "value": "none",
+      "confidence": 0.98,
+      "reason": "No material failure detected"
+    },
+    "score": {
+      "value": 3.74,
+      "confidence": 0.78,
+      "reason": "Production ready: directly usable, specific, complete and consistent with all supplied requirements and evidence."
+    },
+    "concerns": [],
+    "repair_targets": [],
+    "evidence_resolvable": {
+      "value": 0.87,
+      "confidence": 1.0,
+      "reason": "Supplied evidence is authoritative and resolvable"
+    }
+  }
+}

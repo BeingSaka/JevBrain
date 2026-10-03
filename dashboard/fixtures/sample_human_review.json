@@ -1,0 +1,150 @@
+{
+  "run_id": "demo-human-review-001",
+  "decision": "HUMAN REVIEW",
+  "reason": "Noul judgment in uncertainty band",
+  "final_output": "Atlas launches on 15 October 2026. Price is approximately $10 or maybe unannounced.",
+  "repairs": 0,
+  "worker_calls": [],
+  "history": [
+    {
+      "run_id": "demo-human-review-001",
+      "task_type": "text",
+      "worker": "command",
+      "worker_calls": [],
+      "evaluation_profile": "universal",
+      "profile_sha256": "ef831ba6f03f6ccbdb443e34d06554ad1aa2637be61b4caa3fc116437b2e5b6b",
+      "thresholds": {
+        "accept_min": 0.9,
+        "risk_max": 0.18,
+        "failure_min": 0.8,
+        "score_min": 3.5,
+        "confidence_min": 0.65
+      },
+      "candidate_sha256": "demo-sha256-candidate-hr-001",
+      "state_sha256": "demo-sha256-state-hr-001",
+      "policy_decision": "HUMAN REVIEW",
+      "rule_findings": [
+        {
+          "rule_id": "FR002",
+          "name": "Locked requirement violated",
+          "severity": "CRITICAL",
+          "category": "instruction_violation",
+          "status": "uncertain",
+          "probability": 0.13,
+          "method": "jev-noul",
+          "policy_impact": "human_review",
+          "repair_instruction": null
+        },
+        {
+          "rule_id": "FR003",
+          "name": "Unsupported or invented claim",
+          "severity": "CRITICAL",
+          "category": "unsupported_claim",
+          "status": "uncertain",
+          "probability": 0.27,
+          "method": "jev-reused",
+          "policy_impact": "human_review",
+          "repair_instruction": null
+        },
+        {
+          "rule_id": "FR005",
+          "name": "Generic or filler content",
+          "severity": "WARNING",
+          "category": "generic_output",
+          "status": "uncertain",
+          "probability": 0.20,
+          "method": "jev-noul",
+          "policy_impact": "human_review",
+          "repair_instruction": null
+        },
+        {
+          "rule_id": "FR008",
+          "name": "Uncertainty asserted as certainty",
+          "severity": "CRITICAL",
+          "category": "unsupported_claim",
+          "status": "uncertain",
+          "probability": 0.23,
+          "method": "jev-noul",
+          "policy_impact": "human_review",
+          "repair_instruction": null
+        }
+      ],
+      "triggered_rule_ids": [],
+      "repair_performed": false,
+      "repaired_from_rule_ids": [],
+      "repair_requested": false,
+      "retry_count": 0,
+      "primary_failure": "none",
+      "failed_dimensions": [
+        "evidence_sufficient",
+        "instruction_violation_present",
+        "unsupported_claim_present",
+        "rule:FR002",
+        "rule:FR003",
+        "rule:FR005",
+        "rule:FR008"
+      ],
+      "reason": "Noul judgment in uncertainty band",
+      "elapsed_seconds": 0.437,
+      "evaluator": "typesafe-http",
+      "estimated_jev_usd": 0.0000873,
+      "evaluation_latency_ms": 437,
+      "evaluation_cost_usd": 0.0000873,
+      "checks_performed": 16,
+      "rules_triggered": [],
+      "repair_count": 0,
+      "semantic_evaluation": {
+        "noul": {
+          "value": 0.84,
+          "confidence": 0.68,
+          "reason": "Substantive issues detected (acceptance probability 0.84)"
+        },
+        "choice": {
+          "value": "none",
+          "confidence": 0.75,
+          "reason": "No material failure detected"
+        },
+        "score": {
+          "value": 3.76,
+          "confidence": 0.80,
+          "reason": "Production ready: directly usable, specific, complete and consistent with all supplied requirements and evidence."
+        },
+        "concerns": [
+          "evidence_sufficient below threshold (probability: 0.84)",
+          "unsupported_claim_present (probability: 0.27)",
+          "Rule FR002 (Locked requirement violated): uncertain",
+          "Rule FR003 (Unsupported or invented claim): uncertain",
+          "Rule FR005 (Generic or filler content): uncertain",
+          "Rule FR008 (Uncertainty asserted as certainty): uncertain"
+        ],
+        "repair_targets": []
+      }
+    }
+  ],
+  "semantic_evaluation": {
+    "noul": {
+      "value": 0.84,
+      "confidence": 0.68,
+      "reason": "Substantive issues detected (acceptance probability 0.84)"
+    },
+    "choice": {
+      "value": "none",
+      "confidence": 0.75,
+      "reason": "No material failure detected"
+    },
+    "score": {
+      "value": 3.76,
+      "confidence": 0.80,
+      "reason": "Production ready: directly usable, specific, complete and consistent with all supplied requirements and evidence."
+    },
+    "concerns": [
+      "evidence_sufficient below threshold (probability: 0.84)",
+      "unsupported_claim_present (probability: 0.27)",
+      "Rule FR002 (Locked requirement violated): uncertain",
+      "Rule FR003 (Unsupported or invented claim): uncertain",
+      "Rule FR005 (Generic or filler content): uncertain",
+      "Rule FR008 (Uncertainty asserted as certainty): uncertain"
+    ],
+    "repair_targets": []
+  }
+}
