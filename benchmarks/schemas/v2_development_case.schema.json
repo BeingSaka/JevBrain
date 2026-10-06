@@ -8,7 +8,7 @@
     "dataset_version": {"type": "string", "minLength": 1},
     "split": {"const": "development"},
     "ai_design_review": {"const": "AI_DESIGN_REVIEW: APPROVED_WITH_CORRECTIONS"},
-    "human_review_status": {"const": "TWO_INDEPENDENT_BLIND_HUMAN_REVIEWS_COMPLETE"},
+    "human_review_status": {"const": "PENDING_TWO_INDEPENDENT_HUMAN_REVIEWS"},
     "cases": {
       "type": "array",
       "minItems": 22,
