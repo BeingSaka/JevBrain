@@ -23,6 +23,9 @@ def fr006_resolution(state):
     if not _has_format_contract(state) or not isinstance(candidate, str):
         return (), ()
     failed = deterministic(candidate, state["deterministic_checks"])
+    checks = state["deterministic_checks"]
+    if not failed and (checks.get("valid_json") is True or "json_required_fields" in checks):
+        return ("FR006",), ()
     if not failed:
         return (), ()
     return ("FR006",), ({"gate_id": "FR006_deterministic_format", "status": "FAIL", "actionable": True, "evidence": "FR006 format checks failed: " + ", ".join(failed)},)

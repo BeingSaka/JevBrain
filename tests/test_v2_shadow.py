@@ -487,6 +487,22 @@ class V2ShadowTests(unittest.TestCase):
         skipped = {item["rule_id"]: item["reason"] for item in record["routing"]["skipped_rules"]}
         self.assertEqual(skipped["FR006"], "format_contract_resolved_deterministically")
 
+    def test_runner_skips_mechanically_passing_fr006(self):
+        evaluator = CriterionEvaluator()
+        record = self._run_cli(
+            {
+                "original_request": "Return valid JSON only.",
+                "candidate_output": '{"ready": true}',
+                "deterministic_checks": {"valid_json": True},
+            },
+            live=True,
+            evaluator_factory=lambda: evaluator,
+        )
+        called = {next(iter(call["questions"])).removeprefix("criterion_") for call in evaluator.calls}
+        self.assertNotIn("FR006", called)
+        skipped = {item["rule_id"]: item["reason"] for item in record["routing"]["skipped_rules"]}
+        self.assertEqual(skipped["FR006"], "format_contract_resolved_deterministically")
+
     def test_runner_unresolved_format_reaches_fr006(self):
         evaluator = CriterionEvaluator()
         self._run_cli(
@@ -518,7 +534,7 @@ class V2ShadowTests(unittest.TestCase):
             "reviewers": [{"name": "Priya", "case_count": 22}, {"name": "Sakka", "case_count": 22}],
             "blind_review": True, "independent_review": True, "ai_decided_cases": False,
             "expected_labels_access": False, "previous_reviews_access": False,
-            "final_judgments": {"CLEAR_VIOLATION": 9, "CLEAR_NON_VIOLATION": 13, "AMBIGUOUS": 0, "UNAVAILABLE": 0},
+            "final_judgments": {"CLEAR_VIOLATION": 10, "CLEAR_NON_VIOLATION": 12, "AMBIGUOUS": 0, "UNAVAILABLE": 0},
             "agreement": {"agreed_cases": 22, "total_cases": 22},
         })
         self.assertEqual(len(data["cases"]), 22)

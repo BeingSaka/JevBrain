@@ -36,7 +36,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["CLEAR_VIOLATION", "CLEAR_NON_VIOLATION", "AMBIGUOUS", "UNAVAILABLE"],
-          "properties": {"CLEAR_VIOLATION": {"const": 9}, "CLEAR_NON_VIOLATION": {"const": 13}, "AMBIGUOUS": {"const": 0}, "UNAVAILABLE": {"const": 0}}
+          "properties": {"CLEAR_VIOLATION": {"const": 10}, "CLEAR_NON_VIOLATION": {"const": 12}, "AMBIGUOUS": {"const": 0}, "UNAVAILABLE": {"const": 0}}
         },
         "agreement": {
           "type": "object",
