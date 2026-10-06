@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dataset_id", "dataset_version", "split", "ai_design_review", "human_review_status", "cases"],
+  "properties": {
+    "dataset_id": {"const": "jevbrain-v2-development-controls"},
+    "dataset_version": {"type": "string", "minLength": 1},
+    "split": {"const": "development"},
+    "ai_design_review": {"const": "AI_DESIGN_REVIEW: APPROVED_WITH_CORRECTIONS"},
+    "human_review_status": {"const": "PENDING_TWO_INDEPENDENT_HUMAN_REVIEWS"},
+    "cases": {
+      "type": "array",
+      "minItems": 22,
+      "maxItems": 22,
+      "items": {"$ref": "#/$defs/case"}
+    }
+  },
+  "$defs": {
+    "rule": {"type": "string", "pattern": "^FR0(?:0[1-9]|10)$"},
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "scenario_family", "split", "primary_rule", "secondary_rules", "criterion_label", "expected_decision", "evidence_status", "materiality", "human_label_version", "human_label_rationale", "input", "rules_must_not_decide_case"],
+      "properties": {
+        "case_id": {"type": "string", "pattern": "^V2[DB]-FR0(?:0[1-9]|10)-[0-9]{2}$"},
+        "scenario_family": {"type": "string", "minLength": 1},
+        "split": {"const": "development"},
+        "primary_rule": {"$ref": "#/$defs/rule"},
+        "secondary_rules": {"type": "array", "items": {"$ref": "#/$defs/rule"}, "uniqueItems": true},
+        "criterion_label": {"enum": ["VIOLATION", "NON_VIOLATION"]},
+        "expected_decision": {"enum": ["PASS", "REPAIR", "HUMAN REVIEW"]},
+        "evidence_status": {"enum": ["SUFFICIENT", "UNKNOWN_DISCLOSED", "CONFLICTING", "MISSING"]},
+        "materiality": {"enum": ["NONE", "MINOR", "MATERIAL", "CRITICAL"]},
+        "human_label_version": {"type": "string", "minLength": 1},
+        "human_label_rationale": {"type": "string", "minLength": 1},
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["original_request", "available_evidence", "locked_requirements", "known_constraints", "previous_candidate", "allowed_changes", "candidate"],
+          "properties": {
+            "original_request": {"type": "string", "minLength": 1},
+            "available_evidence": {"type": "string"},
+            "locked_requirements": {"type": "array", "items": {"type": "string"}},
+            "known_constraints": {"type": "array", "items": {"type": "string"}},
+            "previous_candidate": {"type": ["string", "null"]},
+            "allowed_changes": {"type": ["array", "null"], "items": {"type": "string"}},
+            "candidate": {"type": "string", "minLength": 1}
+          }
+        },
+        "rules_must_not_decide_case": {"type": "array", "items": {"$ref": "#/$defs/rule"}, "uniqueItems": true},
+        "label_source": {"const": "AI_REVIEWED_DEVELOPMENT"},
+        "review_provider": {"const": "OpenAI"},
+        "review_model": {"enum": ["GPT-5.6 Sol", "GPT-5"]},
+        "review_exact_version": {"type": "string", "minLength": 1},
+        "review_mode": {"enum": ["Instant", "NOT VISIBLE"]},
+        "review_date": {"const": "2026-10-05"},
+        "review_confidence": {"const": "HIGH"}
+      }
+    }
+  }
+}

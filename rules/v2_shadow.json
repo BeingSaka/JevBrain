@@ -1,0 +1,15 @@
+{
+  "shadow_version": "2.0.0-shadow",
+  "rules": [
+    {"rule_id": "FR001", "v2_class": "mixed_critical", "relevance_gate": "semantic_requirement"},
+    {"rule_id": "FR002", "v2_class": "semantic_critical", "relevance_gate": "lock_context"},
+    {"rule_id": "FR003", "v2_class": "semantic_critical", "relevance_gate": "semantic_evidence"},
+    {"rule_id": "FR004", "v2_class": "semantic_critical", "relevance_gate": "semantic_consistency"},
+    {"rule_id": "FR005", "v2_class": "quality_diagnostic", "relevance_gate": "semantic_quality"},
+    {"rule_id": "FR006", "v2_class": "deterministic_format", "relevance_gate": "format_contract"},
+    {"rule_id": "FR007", "v2_class": "mixed_critical", "relevance_gate": "previous_candidate"},
+    {"rule_id": "FR008", "v2_class": "semantic_critical", "relevance_gate": "semantic_uncertainty"},
+    {"rule_id": "FR009", "v2_class": "semantic_critical", "relevance_gate": "semantic_scope"},
+    {"rule_id": "FR010", "v2_class": "quality_diagnostic", "relevance_gate": "semantic_quality"}
+  ]
+}
