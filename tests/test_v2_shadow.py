@@ -471,6 +471,36 @@ class V2ShadowTests(unittest.TestCase):
         self.assertEqual(record["v2_result"], V2_REPAIR)
         self.assertEqual(record["v1_authority"], authority())
 
+    def test_runner_skips_mechanically_resolved_fr006(self):
+        evaluator = CriterionEvaluator()
+        record = self._run_cli(
+            {
+                "original_request": "Use a Status heading.",
+                "candidate_output": "READY.",
+                "deterministic_checks": {"required_substrings": ["Status:"]},
+            },
+            live=True,
+            evaluator_factory=lambda: evaluator,
+        )
+        called = {next(iter(call["questions"])).removeprefix("criterion_") for call in evaluator.calls}
+        self.assertNotIn("FR006", called)
+        skipped = {item["rule_id"]: item["reason"] for item in record["routing"]["skipped_rules"]}
+        self.assertEqual(skipped["FR006"], "format_contract_resolved_deterministically")
+
+    def test_runner_unresolved_format_reaches_fr006(self):
+        evaluator = CriterionEvaluator()
+        self._run_cli(
+            {
+                "original_request": "Use headings and make Next step a complete action sentence.",
+                "candidate_output": "Situation: Ready. Impact: None. Next step: Observe.",
+                "deterministic_checks": {"required_substrings": ["Situation:", "Impact:", "Next step:"]},
+            },
+            live=True,
+            evaluator_factory=lambda: evaluator,
+        )
+        called = {next(iter(call["questions"])).removeprefix("criterion_") for call in evaluator.calls}
+        self.assertIn("FR006", called)
+
     def test_shadow_module_and_runner_have_no_network_or_v1_side_effect_imports(self):
         for path in (ROOT / "src/jev_engine/v2_shadow.py", ROOT / "src/jev_engine/v2_criterion_evaluator.py"):
             text = path.read_text(encoding="utf-8")
