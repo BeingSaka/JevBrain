@@ -32,7 +32,7 @@ def main(argv=None, evaluator_factory=None):
     parser = argparse.ArgumentParser(description="Run the non-authoritative V2 shadow scaffold with injected criteria.")
     parser.add_argument("--input", required=True, help="Normalized shadow state JSON.")
     parser.add_argument("--criteria", help="Injected criterion-results JSON array.")
-    parser.add_argument("--live-semantic", action="store_true", help="Reserved explicit boundary; live semantic execution is not enabled.")
+    parser.add_argument("--live-semantic", action="store_true", help="Explicitly opt in to live criterion evaluation; V2 remains non-authoritative.")
     parser.add_argument("--v1-authority", required=True, help="Existing V1 decision/reason JSON object.")
     parser.add_argument("--output", required=True, help="Explicit audit-record output path.")
     parser.add_argument("--rules", default=str(ROOT / "rules" / "v2_shadow.json"))
