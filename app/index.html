@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jev AI Local App</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <h1>Jev AI Local App</h1>
+
+      <form id="jev-form" novalidate>
+        <label for="original_request">Original Request</label>
+        <textarea id="original_request" name="original_request" rows="4" required></textarea>
+
+        <label for="locked_requirements">Locked Requirements</label>
+        <textarea id="locked_requirements" name="locked_requirements" rows="5" placeholder="One requirement per line"></textarea>
+
+        <label for="candidate_output">Candidate Output</label>
+        <textarea id="candidate_output" name="candidate_output" rows="6"></textarea>
+
+        <label for="output_type">Output Type</label>
+        <input id="output_type" name="output_type" type="text" value="text" />
+
+        <label for="available_evidence">Available Evidence</label>
+        <textarea id="available_evidence" name="available_evidence" rows="3"></textarea>
+
+        <label for="known_constraints">Known Constraints</label>
+        <textarea id="known_constraints" name="known_constraints" rows="3"></textarea>
+
+        <details>
+          <summary>Advanced</summary>
+          <label for="deterministic_checks">Deterministic Checks (JSON object)</label>
+          <textarea id="deterministic_checks" name="deterministic_checks" rows="6" placeholder='{"max_chars": 200}'></textarea>
+        </details>
+
+        <div class="actions">
+          <button id="evaluate-button" type="submit">EVALUATE</button>
+        </div>
+      </form>
+
+      <section id="error-section" class="hidden" aria-live="polite"></section>
+
+      <section id="result-section" class="hidden">
+        <h2>Result</h2>
+        <dl class="summary">
+          <div>
+            <dt>Decision</dt>
+            <dd id="decision-value">not provided</dd>
+          </div>
+          <div>
+            <dt>Reason</dt>
+            <dd id="reason-value">not provided</dd>
+          </div>
+          <div>
+            <dt>Repair Count</dt>
+            <dd id="repair-count-value">not provided</dd>
+          </div>
+          <div>
+            <dt>Failed Dimensions</dt>
+            <dd id="failed-dimensions-value">not provided</dd>
+          </div>
+          <div>
+            <dt>Final Output</dt>
+            <dd id="final-output-value">not provided</dd>
+          </div>
+          <div>
+            <dt>Job Duration</dt>
+            <dd id="job-duration-value">not provided</dd>
+          </div>
+        </dl>
+
+        <details>
+          <summary>Technical details</summary>
+          <pre id="technical-details" aria-live="polite"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
