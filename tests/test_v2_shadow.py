@@ -510,9 +510,17 @@ class V2ShadowTests(unittest.TestCase):
             self.assertNotIn("requests", text)
             self.assertNotIn("http", text)
 
-    def test_development_controls_remain_pending_human_reviews(self):
+    def test_development_controls_record_completed_human_reviews(self):
         data = json.loads((ROOT / "benchmarks/development/v2_controls.json").read_text(encoding="utf-8"))
-        self.assertEqual(data["human_review_status"], "PENDING_TWO_INDEPENDENT_HUMAN_REVIEWS")
+        self.assertEqual(data["human_review_status"], "TWO_INDEPENDENT_BLIND_HUMAN_REVIEWS_COMPLETE")
+        self.assertEqual(data["human_review_provenance"], {
+            "review_date": "2026-10-06",
+            "reviewers": [{"name": "Priya", "case_count": 22}, {"name": "Sakka", "case_count": 22}],
+            "blind_review": True, "independent_review": True, "ai_decided_cases": False,
+            "expected_labels_access": False, "previous_reviews_access": False,
+            "final_judgments": {"CLEAR_VIOLATION": 9, "CLEAR_NON_VIOLATION": 13, "AMBIGUOUS": 0, "UNAVAILABLE": 0},
+            "agreement": {"agreed_cases": 22, "total_cases": 22},
+        })
         self.assertEqual(len(data["cases"]), 22)
 
 

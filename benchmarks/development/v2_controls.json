@@ -3,7 +3,21 @@
   "dataset_version": "0.3.0",
   "split": "development",
   "ai_design_review": "AI_DESIGN_REVIEW: APPROVED_WITH_CORRECTIONS",
-  "human_review_status": "PENDING_TWO_INDEPENDENT_HUMAN_REVIEWS",
+  "human_review_status": "TWO_INDEPENDENT_BLIND_HUMAN_REVIEWS_COMPLETE",
+  "human_review_provenance": {
+    "review_date": "2026-10-06",
+    "reviewers": [
+      {"name": "Priya", "case_count": 22},
+      {"name": "Sakka", "case_count": 22}
+    ],
+    "blind_review": true,
+    "independent_review": true,
+    "ai_decided_cases": false,
+    "expected_labels_access": false,
+    "previous_reviews_access": false,
+    "final_judgments": {"CLEAR_VIOLATION": 9, "CLEAR_NON_VIOLATION": 13, "AMBIGUOUS": 0, "UNAVAILABLE": 0},
+    "agreement": {"agreed_cases": 22, "total_cases": 22}
+  },
   "cases": [
     {
       "case_id": "V2D-FR007-01",
