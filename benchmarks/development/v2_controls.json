@@ -3,7 +3,7 @@
   "dataset_version": "0.3.0",
   "split": "development",
   "ai_design_review": "AI_DESIGN_REVIEW: APPROVED_WITH_CORRECTIONS",
-  "human_review_status": "PENDING_TWO_INDEPENDENT_HUMAN_REVIEWS",
+  "human_review_status": "TWO_INDEPENDENT_BLIND_HUMAN_REVIEWS_COMPLETE",
   "cases": [
     {
       "case_id": "V2D-FR007-01",

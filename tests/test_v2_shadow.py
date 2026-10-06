@@ -510,9 +510,9 @@ class V2ShadowTests(unittest.TestCase):
             self.assertNotIn("requests", text)
             self.assertNotIn("http", text)
 
-    def test_development_controls_remain_pending_and_unmodified(self):
+    def test_development_controls_record_completed_human_reviews(self):
         data = json.loads((ROOT / "benchmarks/development/v2_controls.json").read_text(encoding="utf-8"))
-        self.assertEqual(data["human_review_status"], "PENDING_TWO_INDEPENDENT_HUMAN_REVIEWS")
+        self.assertEqual(data["human_review_status"], "TWO_INDEPENDENT_BLIND_HUMAN_REVIEWS_COMPLETE")
         self.assertEqual(len(data["cases"]), 22)
 
 
