@@ -24,7 +24,7 @@ def fr006_resolution(state):
         return (), ()
     failed = deterministic(candidate, state["deterministic_checks"])
     checks = state["deterministic_checks"]
-    if not failed and (checks.get("valid_json") is True or "json_required_fields" in checks):
+    if not failed and checks.get("format_contract_fully_mechanical", True):
         return ("FR006",), ()
     if not failed:
         return (), ()

@@ -503,13 +503,49 @@ class V2ShadowTests(unittest.TestCase):
         skipped = {item["rule_id"]: item["reason"] for item in record["routing"]["skipped_rules"]}
         self.assertEqual(skipped["FR006"], "format_contract_resolved_deterministically")
 
+    def test_runner_skips_mechanically_passing_max_chars_fr006(self):
+        evaluator = CriterionEvaluator()
+        self._run_cli(
+            {"original_request": "Use at most 10 characters.", "candidate_output": "READY.", "deterministic_checks": {"max_chars": 10}},
+            live=True, evaluator_factory=lambda: evaluator,
+        )
+        called = {next(iter(call["questions"])).removeprefix("criterion_") for call in evaluator.calls}
+        self.assertNotIn("FR006", called)
+
+    def test_runner_skips_mechanically_passing_required_substrings_fr006(self):
+        evaluator = CriterionEvaluator()
+        self._run_cli(
+            {"original_request": "Use a Status heading.", "candidate_output": "Status: READY.", "deterministic_checks": {"required_substrings": ["Status:"]}},
+            live=True, evaluator_factory=lambda: evaluator,
+        )
+        called = {next(iter(call["questions"])).removeprefix("criterion_") for call in evaluator.calls}
+        self.assertNotIn("FR006", called)
+
+    def test_runner_skips_mechanically_passing_forbidden_substrings_fr006(self):
+        evaluator = CriterionEvaluator()
+        self._run_cli(
+            {"original_request": "Do not use urgent.", "candidate_output": "READY.", "deterministic_checks": {"forbidden_substrings": ["urgent"]}},
+            live=True, evaluator_factory=lambda: evaluator,
+        )
+        called = {next(iter(call["questions"])).removeprefix("criterion_") for call in evaluator.calls}
+        self.assertNotIn("FR006", called)
+
+    def test_runner_skips_mechanically_passing_json_required_fields_fr006(self):
+        evaluator = CriterionEvaluator()
+        self._run_cli(
+            {"original_request": "Return JSON with status.", "candidate_output": '{"status": "READY"}', "deterministic_checks": {"json_required_fields": ["status"]}},
+            live=True, evaluator_factory=lambda: evaluator,
+        )
+        called = {next(iter(call["questions"])).removeprefix("criterion_") for call in evaluator.calls}
+        self.assertNotIn("FR006", called)
+
     def test_runner_unresolved_format_reaches_fr006(self):
         evaluator = CriterionEvaluator()
         self._run_cli(
             {
                 "original_request": "Use headings and make Next step a complete action sentence.",
                 "candidate_output": "Situation: Ready. Impact: None. Next step: Observe.",
-                "deterministic_checks": {"required_substrings": ["Situation:", "Impact:", "Next step:"]},
+                "deterministic_checks": {"required_substrings": ["Situation:", "Impact:", "Next step:"], "format_contract_fully_mechanical": False},
             },
             live=True,
             evaluator_factory=lambda: evaluator,
