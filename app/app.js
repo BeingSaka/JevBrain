@@ -6,8 +6,10 @@ const button = document.getElementById('evaluate-button');
 const decisionNode = document.getElementById('decision-value');
 const reasonNode = document.getElementById('reason-value');
 const acceptanceProbabilityNode = document.getElementById('acceptance-probability-value');
+const evaluationConfidenceNode = document.getElementById('evaluation-confidence-value');
 const repairCountNode = document.getElementById('repair-count-value');
 const failedDimensionsNode = document.getElementById('failed-dimensions-value');
+const concernsNode = document.getElementById('concerns-value');
 const finalOutputNode = document.getElementById('final-output-value');
 const jobDurationNode = document.getElementById('job-duration-value');
 const detailsNode = document.getElementById('technical-details');
@@ -106,8 +108,23 @@ async function submitEvaluation(event) {
     acceptanceProbabilityNode.textContent = Number.isFinite(acceptanceProbability) && acceptanceProbability >= 0 && acceptanceProbability <= 1
       ? `${acceptanceProbability * 100}%`
       : 'not provided';
-    repairCountNode.textContent = result.repairs ?? 'not provided';
+    const evaluationConfidence = result.semantic_evaluation?.noul?.confidence;
+    evaluationConfidenceNode.textContent = Number.isFinite(evaluationConfidence) && evaluationConfidence >= 0 && evaluationConfidence <= 1
+      ? `${evaluationConfidence * 100}%`
+      : 'not provided';
     failedDimensionsNode.textContent = Array.isArray(result.failed_dimensions) && result.failed_dimensions.length ? result.failed_dimensions.join(', ') : 'not provided';
+    const concerns = result.semantic_evaluation?.concerns;
+    concernsNode.replaceChildren();
+    if (Array.isArray(concerns) && concerns.every((concern) => typeof concern === 'string') && concerns.length) {
+      for (const concern of concerns) {
+        const item = document.createElement('div');
+        item.textContent = concern;
+        concernsNode.appendChild(item);
+      }
+    } else {
+      concernsNode.textContent = 'none reported';
+    }
+    repairCountNode.textContent = result.repairs ?? 'not provided';
     finalOutputNode.textContent = result.final_output ?? 'not provided';
     jobDurationNode.textContent = `${Number(data.job_duration_ms || 0).toFixed(3)} ms`;
     detailsNode.textContent = JSON.stringify(data, null, 2);
