@@ -179,6 +179,11 @@ def evaluate(payload: Any, args=None) -> Dict[str, Any]:
     provider_error = _provider_failure(result)
     if provider_error:
         return _error(provider_error)
+    history = result.get("history")
+    if isinstance(history, list) and history and isinstance(history[-1], dict):
+        failed_dimensions = history[-1].get("failed_dimensions")
+        if isinstance(failed_dimensions, list):
+            result = {**result, "failed_dimensions": failed_dimensions}
     return {
         "ok": True,
         "result": result,
