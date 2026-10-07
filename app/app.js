@@ -5,6 +5,7 @@ const button = document.getElementById('evaluate-button');
 
 const decisionNode = document.getElementById('decision-value');
 const reasonNode = document.getElementById('reason-value');
+const acceptanceProbabilityNode = document.getElementById('acceptance-probability-value');
 const repairCountNode = document.getElementById('repair-count-value');
 const failedDimensionsNode = document.getElementById('failed-dimensions-value');
 const finalOutputNode = document.getElementById('final-output-value');
@@ -101,6 +102,10 @@ async function submitEvaluation(event) {
     const result = data.result || {};
     decisionNode.textContent = result.decision || 'not provided';
     reasonNode.textContent = result.reason || 'not provided';
+    const acceptanceProbability = result.semantic_evaluation?.noul?.value;
+    acceptanceProbabilityNode.textContent = Number.isFinite(acceptanceProbability) && acceptanceProbability >= 0 && acceptanceProbability <= 1
+      ? `${acceptanceProbability * 100}%`
+      : 'not provided';
     repairCountNode.textContent = result.repairs ?? 'not provided';
     failedDimensionsNode.textContent = Array.isArray(result.failed_dimensions) && result.failed_dimensions.length ? result.failed_dimensions.join(', ') : 'not provided';
     finalOutputNode.textContent = result.final_output ?? 'not provided';
