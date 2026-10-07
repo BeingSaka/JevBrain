@@ -13,6 +13,7 @@ if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
 from adapter import evaluate, parse_cli_args
+from auto_gate import build_contract, canonical_payload
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_DIR = ROOT / "app"
@@ -21,6 +22,11 @@ ALLOWED_FILES = {
     "/index.html": APP_DIR / "index.html",
     "/app.js": APP_DIR / "app.js",
     "/style.css": APP_DIR / "style.css",
+    "/assets/jev/jev_idle.png": APP_DIR / "assets" / "jev" / "jev_idle.png",
+    "/assets/jev/jev_attentive.png": APP_DIR / "assets" / "jev" / "jev_attentive.png",
+    "/assets/jev/jev_checking.png": APP_DIR / "assets" / "jev" / "jev_checking.png",
+    "/assets/jev/jev_human_review.png": APP_DIR / "assets" / "jev" / "jev_human_review.png",
+    "/assets/jev/jev_failure.png": APP_DIR / "assets" / "jev" / "jev_failure.png",
 }
 
 
@@ -119,6 +125,8 @@ class JevRequestHandler(BaseHTTPRequestHandler):
             mime = "application/javascript; charset=utf-8"
         elif self.path.endswith(".css"):
             mime = "text/css; charset=utf-8"
+        elif self.path.endswith(".png"):
+            mime = "image/png"
 
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", mime)
@@ -169,6 +177,35 @@ class JevRequestHandler(BaseHTTPRequestHandler):
             except (UnicodeDecodeError, json.JSONDecodeError):
                 self._error_json(HTTPStatus.BAD_REQUEST, "invalid_json", "Malformed JSON body")
                 return
+
+            if isinstance(payload, dict) and "request_text" in payload:
+                if set(payload) != {"request_text"} or not isinstance(payload["request_text"], str):
+                    self._error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "invalid_request",
+                        "Auto-Gate requires one request_text string",
+                    )
+                    return
+                try:
+                    contract = build_contract(payload["request_text"])
+                except (TypeError, ValueError):
+                    self._error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "invalid_request",
+                        "Request must be a nonempty string",
+                    )
+                    return
+                if contract["status"] != "READY":
+                    self._send_json(
+                        {
+                            "ok": True,
+                            "status": "NEEDS_CLARIFICATION",
+                            "clarification_issues": contract["clarification_issues"],
+                        },
+                        HTTPStatus.OK,
+                    )
+                    return
+                payload = canonical_payload(contract)
 
             response = evaluate(payload, getattr(self.server, "cli_args", None))
             if not response.get("ok"):

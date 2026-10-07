@@ -3,92 +3,205 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jev AI Local App</title>
+    <meta name="theme-color" content="#07090c" />
+    <title>Jev — AI Decision System</title>
     <link rel="stylesheet" href="/style.css" />
+    <link rel="preload" as="image" href="assets/jev/jev_idle.png" />
+    <link rel="preload" as="image" href="assets/jev/jev_attentive.png" />
+    <link rel="preload" as="image" href="assets/jev/jev_checking.png" />
+    <link rel="preload" as="image" href="assets/jev/jev_human_review.png" />
+    <link rel="preload" as="image" href="assets/jev/jev_failure.png" />
   </head>
   <body>
-    <main class="app-shell">
-      <h1>Jev AI Local App</h1>
-
-      <form id="jev-form" novalidate>
-        <label for="original_request">Original Request</label>
-        <textarea id="original_request" name="original_request" rows="4" required></textarea>
-
-        <label for="locked_requirements">Locked Requirements</label>
-        <textarea id="locked_requirements" name="locked_requirements" rows="5" placeholder="One requirement per line"></textarea>
-
-        <label for="candidate_output">Candidate Output</label>
-        <textarea id="candidate_output" name="candidate_output" rows="6"></textarea>
-
-        <label for="output_type">Output Type</label>
-        <input id="output_type" name="output_type" type="text" value="text" />
-
-        <label for="available_evidence">Available Evidence</label>
-        <textarea id="available_evidence" name="available_evidence" rows="3"></textarea>
-
-        <label for="known_constraints">Known Constraints</label>
-        <textarea id="known_constraints" name="known_constraints" rows="3"></textarea>
-
-        <details>
-          <summary>Advanced</summary>
-          <label for="deterministic_checks">Deterministic Checks (JSON object)</label>
-          <textarea id="deterministic_checks" name="deterministic_checks" rows="6" placeholder='{"max_chars": 200}'></textarea>
-        </details>
-
-        <div class="actions">
-          <button id="evaluate-button" type="submit">EVALUATE</button>
+    <div class="mindspace" id="mindspace">
+      <header class="masthead">
+        <div class="masthead-brand">
+          <a class="wordmark" href="/" aria-label="Jev home">JEV</a>
+          <div class="product-label">AI Decision System</div>
         </div>
-      </form>
+        <div class="masthead-actions">
+          <button
+            type="button"
+            id="history-toggle-button"
+            class="history-toggle-button"
+            aria-label="Evaluation history"
+          >
+            History
+          </button>
+        </div>
+      </header>
 
-      <section id="error-section" class="hidden" aria-live="polite"></section>
+      <main class="mindspace-body">
+        <!-- The Jev Character Hero/Stage -->
+        <div class="jev-stage" id="jev-stage">
+          <button
+            type="button"
+            id="jev-hero-button"
+            class="jev-hero-button"
+            aria-label="Click Jev to begin"
+          >
+            <div class="jev-glow-platform" aria-hidden="true"></div>
+            <img
+              id="jev-character"
+              class="jev-hero-image"
+              src="assets/jev/jev_idle.png"
+              alt="Jev AI Hero"
+            />
+          </button>
+          <div id="idle-prompt-group" class="idle-prompt-group">
+            <h1 class="idle-brand">J E V</h1>
+            <p id="hero-prompt" class="hero-prompt">Click Jev to begin</p>
+          </div>
+        </div>
 
-      <section id="result-section" class="hidden">
-        <h2>Result</h2>
-        <dl class="summary">
-          <div>
-            <dt>Decision</dt>
-            <dd id="decision-value">not provided</dd>
-          </div>
-          <div>
-            <dt>Reason</dt>
-            <dd id="reason-value">not provided</dd>
-          </div>
-          <div>
-            <dt>Acceptance Probability</dt>
-            <dd id="acceptance-probability-value">not provided</dd>
-          </div>
-          <div>
-            <dt>Evaluation Confidence</dt>
-            <dd id="evaluation-confidence-value">not provided</dd>
-          </div>
-          <div>
-            <dt>Failed Dimensions</dt>
-            <dd id="failed-dimensions-value">not provided</dd>
-          </div>
-          <div>
-            <dt>Concerns</dt>
-            <dd id="concerns-value">none reported</dd>
-          </div>
-          <div>
-            <dt>Repair Count</dt>
-            <dd id="repair-count-value">not provided</dd>
-          </div>
-          <div>
-            <dt>Final Output</dt>
-            <dd id="final-output-value">not provided</dd>
-          </div>
-          <div>
-            <dt>Job Duration</dt>
-            <dd id="job-duration-value">not provided</dd>
-          </div>
-        </dl>
+        <!-- The Interactive Panel (Composer / Checking / Result) -->
+        <div id="active-panel" class="active-panel hidden">
+          <!-- State 2: Composer View -->
+          <div id="composer-view" class="view-panel">
+            <div class="composer-header">
+              <h2 class="view-title">What should I check?</h2>
+              <p class="view-subtitle">Describe the task. Jev will prepare an answer and evaluate it against your request.</p>
+            </div>
 
-        <details>
-          <summary>Technical details</summary>
-          <pre id="technical-details" aria-live="polite"></pre>
-        </details>
-      </section>
-    </main>
+            <form id="jev-form" class="request-composer" novalidate>
+              <label class="sr-only" for="request_text">What should I check?</label>
+              <textarea
+                id="request_text"
+                name="request_text"
+                rows="5"
+                placeholder="Describe what you need…"
+                required
+                aria-describedby="request-hint"
+              ></textarea>
+              <div class="composer-footer">
+                <p id="request-hint">One request · Ctrl/⌘ + Enter to run</p>
+                <button id="evaluate-button" type="submit">
+                  <span>Let’s Check</span>
+                  <span class="button-arrow" aria-hidden="true">↗</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- State 3: Checking View -->
+          <section id="processing-section" class="view-panel processing-view hidden" role="status" aria-live="polite">
+            <h2 class="checking-title">JEV IS CHECKING</h2>
+            <p id="processing-message" class="checking-subtitle">Analyzing your request…</p>
+            <div class="timer-badge">
+              <span class="timer-icon" aria-hidden="true">⏱</span>
+              <span id="elapsed-time" class="timer-digits">0.0s</span>
+            </div>
+          </section>
+
+          <!-- Notification / Clarification / Technical Error -->
+          <section id="message-section" class="message-panel hidden" aria-live="polite">
+            <div class="message-heading-row">
+              <span id="message-icon" class="message-icon" aria-hidden="true"></span>
+              <h2 id="message-title"></h2>
+            </div>
+            <div id="message-content"></div>
+          </section>
+
+          <!-- State 4+: Result View -->
+          <section id="result-section" class="view-panel result-view hidden" aria-labelledby="result-heading">
+            <div id="historical-banner" class="historical-banner hidden">
+              <div class="historical-banner-header">
+                <span class="historical-badge">READ-ONLY HISTORY</span>
+                <span id="historical-time" class="historical-time"></span>
+              </div>
+              <p id="historical-request-display" class="historical-request-display"></p>
+            </div>
+
+            <div id="decision-panel" class="decision-header-row" data-decision="OTHER">
+              <div id="decision-badge" class="decision-badge">
+                <span id="decision-icon" class="decision-icon">●</span>
+                <span id="decision-value" class="decision-label">not provided</span>
+              </div>
+              <div class="signature-block">
+                <span id="job-signature" class="job-signature">JEV</span>
+              </div>
+            </div>
+
+            <div class="answer-wrapper">
+              <h2 id="result-heading" class="answer-title">Final Answer</h2>
+              <article class="answer-panel">
+                <div id="final-output-value" class="answer-copy">not provided</div>
+              </article>
+              <div class="reason-block">
+                <p id="reason-value" class="reason-copy">not provided</p>
+              </div>
+            </div>
+
+            <details class="disclosure decision-console">
+              <summary>Decision Console</summary>
+              <dl class="analysis-grid">
+                <div>
+                  <dt>Evaluation Confidence</dt>
+                  <dd id="evaluation-confidence-value">not provided</dd>
+                </div>
+                <div>
+                  <dt>Acceptance Probability</dt>
+                  <dd id="acceptance-probability-value">not provided</dd>
+                </div>
+                <div>
+                  <dt>Failed Dimensions</dt>
+                  <dd id="failed-dimensions-value">not provided</dd>
+                </div>
+                <div>
+                  <dt>Concerns</dt>
+                  <dd id="concerns-value">none reported</dd>
+                </div>
+                <div>
+                  <dt>Repair Count</dt>
+                  <dd id="repair-count-value">not provided</dd>
+                </div>
+                <div>
+                  <dt>Job Duration</dt>
+                  <dd id="job-duration-value">not provided</dd>
+                </div>
+              </dl>
+              <pre id="technical-details" aria-live="polite"></pre>
+            </details>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- History Drawer & Backdrop -->
+    <div id="history-backdrop" class="history-backdrop hidden" aria-hidden="true"></div>
+    <aside
+      id="history-drawer"
+      class="history-drawer hidden"
+      aria-label="Evaluation History"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="history-drawer-header">
+        <div class="history-title-group">
+          <h2 class="history-title">History</h2>
+          <span id="history-count" class="history-count">0</span>
+        </div>
+        <div class="history-header-actions">
+          <button
+            type="button"
+            id="clear-history-button"
+            class="history-clear-button"
+            title="Clear all history"
+          >
+            Clear History
+          </button>
+          <button
+            type="button"
+            id="close-history-button"
+            class="history-close-button"
+            aria-label="Close history"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      <div id="history-list" class="history-list" role="list"></div>
+    </aside>
 
     <script src="/app.js"></script>
   </body>
